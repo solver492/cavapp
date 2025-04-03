@@ -4,7 +4,7 @@ from werkzeug.security import generate_password_hash
 from sqlalchemy import or_
 
 from app import db
-from models import User
+from models import User, TypeVehicule
 from forms import UserForm, SearchUserForm
 from auth import role_required
 
@@ -94,6 +94,10 @@ def index():
 def add():
     form = UserForm()
     
+    # Remplir les choix de types de véhicules
+    types_vehicules = TypeVehicule.query.all()
+    form.type_vehicule_id.choices = [(0, 'Aucun')] + [(t.id, t.nom) for t in types_vehicules]
+    
     if form.validate_on_submit():
         # Check if username already exists
         existing_user = User.query.filter_by(username=form.username.data).first()
@@ -116,7 +120,8 @@ def add():
             email=form.email.data,
             role=form.role.data,
             statut=form.statut.data,
-            vehicule=form.vehicule.data if form.vehicule.data else None
+            vehicule=form.vehicule.data if form.vehicule.data else None,
+            type_vehicule_id=form.type_vehicule_id.data if form.type_vehicule_id.data != 0 else None
         )
         
         # Set password
@@ -151,6 +156,10 @@ def edit(id):
     
     form = UserForm(obj=user)
     
+    # Remplir les choix de types de véhicules
+    types_vehicules = TypeVehicule.query.all()
+    form.type_vehicule_id.choices = [(0, 'Aucun')] + [(t.id, t.nom) for t in types_vehicules]
+    
     if form.validate_on_submit():
         # Check if username changed and already exists
         if form.username.data != user.username:
@@ -177,6 +186,7 @@ def edit(id):
             user.role = form.role.data
             user.statut = form.statut.data
             user.vehicule = form.vehicule.data if form.vehicule.data else None
+            user.type_vehicule_id = form.type_vehicule_id.data if form.type_vehicule_id.data != 0 else None
         
         # Update password if provided
         if form.password.data:
