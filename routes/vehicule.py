@@ -158,32 +158,62 @@ def delete_type_demenagement(id):
 @vehicule_bp.route('/api/vehicules-recommandes/<int:type_demenagement_id>', methods=['GET'])
 @login_required
 def get_vehicules_recommandes(type_demenagement_id):
-    type_demenagement = TypeDemenagement.query.get_or_404(type_demenagement_id)
-    
-    # Récupérer les types de véhicules recommandés pour ce type de déménagement
-    vehicules = type_demenagement.types_vehicule
-    vehicule_ids = [v.id for v in vehicules] if vehicules else []
-    
-    # Récupérer les transporteurs disponibles avec ces types de véhicules
-    transporteurs = []
-    if vehicule_ids:
-        transporteurs = User.query.filter(
+    try:
+        # Si le type_demenagement_id est 0, renvoyer un résultat vide
+        if type_demenagement_id == 0:
+            return jsonify({
+                'types_vehicule': [],
+                'transporteurs': []
+            })
+            
+        type_demenagement = TypeDemenagement.query.get_or_404(type_demenagement_id)
+        
+        # Récupérer les types de véhicules recommandés pour ce type de déménagement
+        vehicules = type_demenagement.types_vehicule
+        vehicule_ids = [v.id for v in vehicules] if vehicules else []
+        
+        # Récupérer les transporteurs disponibles avec ces types de véhicules
+        transporteurs = []
+        if vehicule_ids:
+            transporteurs = User.query.filter(
+                User.role == 'transporteur',
+                User.statut == 'actif',
+                User.type_vehicule_id.in_(vehicule_ids)
+            ).all()
+        
+        # Récupérer tous les transporteurs actifs pour la liste "Autres transporteurs disponibles"
+        autres_transporteurs = User.query.filter(
             User.role == 'transporteur',
-            User.statut == 'actif',
-            User.type_vehicule_id.in_(vehicule_ids)
+            User.statut == 'actif'
         ).all()
-    
-    # Formater les résultats
-    result = {
-        'types_vehicule': [{'id': v.id, 'nom': v.nom, 'capacite': v.capacite} for v in vehicules],
-        'transporteurs': [
-            {
-                'id': t.id, 
-                'nom': f"{t.nom} {t.prenom}", 
-                'vehicule': t.vehicule, 
-                'type_vehicule': t.type_vehicule.nom if t.type_vehicule else 'Non spécifié'
-            } for t in transporteurs
-        ]
-    }
-    
-    return jsonify(result)
+        
+        # Filtrer les transporteurs qui ne sont pas dans la liste des recommandés
+        autres_transporteurs = [t for t in autres_transporteurs if t not in transporteurs]
+        
+        # Formater les résultats
+        result = {
+            'types_vehicule': [{'id': v.id, 'nom': v.nom, 'capacite': v.capacite} for v in vehicules],
+            'transporteurs': [
+                {
+                    'id': t.id, 
+                    'nom': f"{t.nom} {t.prenom}", 
+                    'vehicule': t.vehicule, 
+                    'type_vehicule': t.type_vehicule.nom if t.type_vehicule else 'Non spécifié'
+                } for t in transporteurs
+            ],
+            'autres_transporteurs': [
+                {
+                    'id': t.id, 
+                    'nom': f"{t.nom} {t.prenom}", 
+                    'vehicule': t.vehicule, 
+                    'type_vehicule': t.type_vehicule.nom if t.type_vehicule else 'Non spécifié'
+                } for t in autres_transporteurs
+            ]
+        }
+        
+        return jsonify(result)
+    except Exception as e:
+        # Journaliser l'erreur
+        print(f"Erreur dans API véhicules recommandés: {str(e)}")
+        # Renvoyer un message d'erreur avec un code d'état approprié
+        return jsonify({'error': str(e)}), 500
