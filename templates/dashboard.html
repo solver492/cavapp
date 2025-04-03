@@ -1,0 +1,183 @@
+{% extends 'base.html' %}
+
+{% block title %}Tableau de bord - {{ config.APP_NAME }}{% endblock %}
+
+{% block content %}
+<div id="dashboard-page">
+    <div class="page-title">
+        <h1><i class="fas fa-tachometer-alt"></i> Tableau de bord</h1>
+    </div>
+    
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card stat-card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="stat-title">Clients actifs</h6>
+                            <h3 class="stat-value">{{ stats.total_clients }}</h3>
+                            <p class="text-muted mb-0">+{{ stats.new_clients_month }} ce mois</p>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card stat-card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="stat-title">Prestations à venir</h6>
+                            <h3 class="stat-value">{{ stats.prestations_a_venir }}</h3>
+                            <p class="text-muted mb-0">{{ stats.prestations_en_cours }} en cours</p>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="fas fa-truck-moving"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card stat-card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="stat-title">Factures impayées</h6>
+                            <h3 class="stat-value">{{ stats.factures_impayees }}</h3>
+                            <p class="text-muted mb-0">sur {{ stats.total_factures }} factures</p>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="fas fa-file-invoice-dollar"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card stat-card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="stat-title">Chiffre d'affaires</h6>
+                            <h3 class="stat-value">{{ "{:,.2f}".format(stats.total_revenue) }} €</h3>
+                            <p class="text-muted mb-0">Total encaissé</p>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="fas fa-euro-sign"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Charts and Calendar -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0"><i class="fas fa-chart-line"></i> Évolution du chiffre d'affaires</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="revenue-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0"><i class="fas fa-calendar-alt"></i> Calendrier des prestations</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div id="dashboard-calendar"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0"><i class="fas fa-chart-pie"></i> Types de prestations</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container" style="height: 250px;">
+                        <canvas id="service-type-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0"><i class="fas fa-bell"></i> Activité récente</h5>
+                </div>
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush">
+                        {% if stats.recent_clients %}
+                            {% for client in stats.recent_clients[:2] %}
+                                <li class="list-group-item">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <i class="fas fa-user text-primary"></i>
+                                            <span>Nouveau client: {{ client.nom }} {{ client.prenom }}</span>
+                                        </div>
+                                        <small class="text-muted">{{ client.date_creation.strftime('%d/%m/%Y') }}</small>
+                                    </div>
+                                </li>
+                            {% endfor %}
+                        {% endif %}
+                        
+                        {% if stats.recent_prestations %}
+                            {% for prestation in stats.recent_prestations[:2] %}
+                                <li class="list-group-item">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <i class="fas fa-truck-moving text-success"></i>
+                                            <span>Prestation: {{ prestation.client.nom }} {{ prestation.client.prenom }}</span>
+                                        </div>
+                                        <small class="text-muted">{{ prestation.date_debut.strftime('%d/%m/%Y') }}</small>
+                                    </div>
+                                </li>
+                            {% endfor %}
+                        {% endif %}
+                        
+                        {% if stats.recent_factures %}
+                            {% for facture in stats.recent_factures[:2] %}
+                                <li class="list-group-item">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <i class="fas fa-file-invoice-dollar text-warning"></i>
+                                            <span>Facture #{{ facture.numero }}: {{ facture.client.nom }} {{ facture.client.prenom }}</span>
+                                        </div>
+                                        <small class="text-muted">{{ facture.date_emission.strftime('%d/%m/%Y') }}</small>
+                                    </div>
+                                </li>
+                            {% endfor %}
+                        {% endif %}
+                    </ul>
+                </div>
+                <div class="card-footer text-center">
+                    <a href="{{ url_for('client.index') }}" class="btn btn-sm btn-outline-primary me-2">
+                        <i class="fas fa-users"></i> Tous les clients
+                    </a>
+                    <a href="{{ url_for('prestation.index') }}" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-truck-moving"></i> Toutes les prestations
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block page_scripts %}
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}

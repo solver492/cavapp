@@ -1,0 +1,148 @@
+{% extends 'base.html' %}
+
+{% block title %}Ajouter une prestation - {{ config.APP_NAME }}{% endblock %}
+
+{% block content %}
+<div class="prestation-page">
+    <div class="page-title">
+        <h1><i class="fas fa-plus-circle"></i> Ajouter une prestation</h1>
+        <a href="{{ url_for('prestation.index') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Retour à la liste
+        </a>
+    </div>
+    
+    <div class="card">
+        <div class="card-body">
+            <form method="POST">
+                {{ form.hidden_tag() }}
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="client_id" class="form-label">{{ form.client_id.label.text }} <span class="text-danger">*</span></label>
+                        {{ form.client_id(class="form-control" + (" is-invalid" if form.client_id.errors else ""), id="client_id") }}
+                        {% for error in form.client_id.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label for="transporteurs" class="form-label">{{ form.transporteurs.label.text }}</label>
+                        {{ form.transporteurs(class="form-control" + (" is-invalid" if form.transporteurs.errors else ""), id="transporteurs", size=5) }}
+                        {% for error in form.transporteurs.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                        {% endfor %}
+                        <div class="form-text">Maintenez Ctrl pour sélectionner plusieurs transporteurs</div>
+                        <div class="selected-transporteurs-count mt-1 small text-muted"></div>
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="date_debut" class="form-label">{{ form.date_debut.label.text }} <span class="text-danger">*</span></label>
+                        {{ form.date_debut(class="form-control" + (" is-invalid" if form.date_debut.errors else ""), id="date_debut", type="date") }}
+                        {% for error in form.date_debut.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label for="date_fin" class="form-label">{{ form.date_fin.label.text }} <span class="text-danger">*</span></label>
+                        {{ form.date_fin(class="form-control" + (" is-invalid" if form.date_fin.errors else ""), id="date_fin", type="date") }}
+                        {% for error in form.date_fin.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="adresse_depart" class="form-label">{{ form.adresse_depart.label.text }} <span class="text-danger">*</span></label>
+                    {{ form.adresse_depart(class="form-control" + (" is-invalid" if form.adresse_depart.errors else ""), id="adresse_depart", rows=3) }}
+                    {% for error in form.adresse_depart.errors %}
+                        <div class="invalid-feedback">{{ error }}</div>
+                    {% endfor %}
+                </div>
+                
+                <div class="mb-3">
+                    <label for="adresse_arrivee" class="form-label">{{ form.adresse_arrivee.label.text }} <span class="text-danger">*</span></label>
+                    {{ form.adresse_arrivee(class="form-control" + (" is-invalid" if form.adresse_arrivee.errors else ""), id="adresse_arrivee", rows=3) }}
+                    {% for error in form.adresse_arrivee.errors %}
+                        <div class="invalid-feedback">{{ error }}</div>
+                    {% endfor %}
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="type_demenagement" class="form-label">{{ form.type_demenagement.label.text }} <span class="text-danger">*</span></label>
+                        {{ form.type_demenagement(class="form-control" + (" is-invalid" if form.type_demenagement.errors else ""), id="type_demenagement") }}
+                        {% for error in form.type_demenagement.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label for="tags" class="form-label">{{ form.tags.label.text }}</label>
+                        {{ form.tags(class="form-control" + (" is-invalid" if form.tags.errors else ""), id="tags") }}
+                        {% for error in form.tags.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                        {% endfor %}
+                        <div class="form-text">Ex: urgent, fragile, volumineux</div>
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="societe" class="form-label">{{ form.societe.label.text }}</label>
+                        {{ form.societe(class="form-control" + (" is-invalid" if form.societe.errors else ""), id="societe") }}
+                        {% for error in form.societe.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label for="montant" class="form-label">{{ form.montant.label.text }}</label>
+                        {{ form.montant(class="form-control" + (" is-invalid" if form.montant.errors else ""), id="montant", type="number", step="0.01") }}
+                        {% for error in form.montant.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="priorite" class="form-label">{{ form.priorite.label.text }}</label>
+                        {{ form.priorite(class="form-control" + (" is-invalid" if form.priorite.errors else ""), id="priorite") }}
+                        {% for error in form.priorite.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label for="statut" class="form-label">{{ form.statut.label.text }}</label>
+                        {{ form.statut(class="form-control" + (" is-invalid" if form.statut.errors else ""), id="statut") }}
+                        {% for error in form.statut.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <label for="observations" class="form-label">{{ form.observations.label.text }}</label>
+                    {{ form.observations(class="form-control" + (" is-invalid" if form.observations.errors else ""), id="observations", rows=4) }}
+                    {% for error in form.observations.errors %}
+                        <div class="invalid-feedback">{{ error }}</div>
+                    {% endfor %}
+                </div>
+                
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                    <a href="{{ url_for('prestation.index') }}" class="btn btn-secondary">Annuler</a>
+                    {{ form.submit(class="btn btn-primary") }}
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block page_scripts %}
+<script src="{{ url_for('static', filename='js/prestations.js') }}"></script>
+{% endblock %}
