@@ -5,6 +5,24 @@
 {% block head %}
 {{ super() }}
 <link href="{{ url_for('static', filename='css/lib/fullcalendar.min.css') }}" rel="stylesheet">
+<style>
+/* Styles spécifiques à cette page pour corriger les problèmes de select */
+#type_demenagement_id {
+    width: 100%;
+    height: 38px;
+    padding: 0.375rem 0.75rem;
+    font-size: 1rem;
+    line-height: 1.5;
+    color: #212529;
+    background-color: #fff;
+    background-clip: padding-box;
+    border: 1px solid #ced4da;
+    border-radius: 0.25rem;
+    appearance: menulist !important;
+    -webkit-appearance: menulist !important;
+    -moz-appearance: menulist !important;
+}
+</style>
 {% endblock %}
 
 {% block content %}
@@ -31,24 +49,32 @@
                         {% endfor %}
                     </div>
                     
-                    <!-- Nouveau placement du type de déménagement en haut -->
                     <div class="col-md-6">
-                        <label for="type_demenagement_id" class="form-label">{{ form.type_demenagement_id.label.text }}</label>
-                        {{ form.type_demenagement_id(class="form-control" + (" is-invalid" if form.type_demenagement_id.errors else ""), id="type_demenagement_id") }}
-                        {% for error in form.type_demenagement_id.errors %}
-                            <div class="invalid-feedback">{{ error }}</div>
-                        {% endfor %}
+                        <label for="type_demenagement_id" class="form-label">Type de déménagement</label>
+                        <!-- SOLUTION NATIVE : Select HTML standard sans classe Bootstrap -->
+                        <select name="type_demenagement_id" id="type_demenagement_id">
+                            <option value="0">Sélectionnez un type</option>
+                            {% for type in types_demenagement %}
+                                <option value="{{ type.id }}">{{ type.nom }}</option>
+                            {% endfor %}
+                        </select>
+                        
+                        <!-- Ajout pour le débogage -->
+                        <div class="debug-info" style="font-size: 10px; color: #aaa; margin-top: 5px;">
+                            Types: 
+                            {% for type in types_demenagement %}
+                                {{ type.id }}-{{ type.nom }}{% if not loop.last %}, {% endif %}
+                            {% endfor %}
+                        </div>
+                        <!-- Fin du débogage -->
                         <div class="form-text">Sélectionnez d'abord le type pour voir les véhicules adaptés</div>
                     </div>
                 </div>
                 
-                <!-- Section Véhicules suggérés et Type de déménagement (ancien) -->
-                {# Le champ type_demenagement est caché mais est toujours fonctionnel pour la compatibilité #}
-                {{ form.type_demenagement(type="hidden", id="type_demenagement") }}
-                {% for error in form.type_demenagement.errors %}
-                    <div class="d-none">{{ error }}</div>
-                {% endfor %}
+                <!-- Champ caché pour la compatibilité avec l'ancien système -->
+                {{ form.type_demenagement_id(style="display: none;") }}
                 
+                <!-- Section Véhicules suggérés -->
                 <div class="row mb-3">
                     <div class="col-md-12">
                         <label for="vehicules_suggeres" class="form-label">{{ form.vehicules_suggeres.label.text }}</label>
@@ -80,15 +106,15 @@
                 <div class="row mb-3">
                     <div class="col-md-12 form-group transporteurs">
                         <button type="button" id="show-calendar-btn" class="btn btn-primary mb-2">
-                            <i class="fas fa-calendar-alt mr-2"></i> Afficher le calendrier des disponibilités
+                            <i class="fas fa-calendar-alt"></i> Voir les disponibilités
                         </button>
                         
                         <label for="transporteurs" class="form-label">{{ form.transporteurs.label.text }}</label>
-                        {{ form.transporteurs(class="form-control" + (" is-invalid" if form.transporteurs.errors else ""), id="transporteurs", size=5) }}
+                        {{ form.transporteurs(class="form-control" + (" is-invalid" if form.transporteurs.errors else ""), id="transporteurs", multiple=True, size=6) }}
                         {% for error in form.transporteurs.errors %}
                             <div class="invalid-feedback">{{ error }}</div>
                         {% endfor %}
-                        <div class="form-text">Maintenez Ctrl pour sélectionner plusieurs transporteurs. Les transporteurs recommandés avec véhicules adaptés sont mis en évidence.</div>
+                        <div class="form-text">Maintenez la touche Ctrl pour sélectionner plusieurs transporteurs</div>
                         <div class="selected-transporteurs-count mt-1 small text-muted"></div>
                     </div>
                 </div>
@@ -210,6 +236,21 @@
 <script src="{{ url_for('static', filename='js/lib/fullcalendar-fr.js') }}"></script>
 <script src="{{ url_for('static', filename='js/prestations.js') }}"></script>
 <script src="{{ url_for('static', filename='js/transporteur-disponibilite.js') }}"></script>
-<script src="{{ url_for('static', filename='js/vehicule-suggestions.js') }}"></script>
 <script src="{{ url_for('static', filename='js/transporteur-calendrier.js') }}"></script>
+<script src="{{ url_for('static', filename='js/vehicule-suggestions.js') }}"></script>
+
+<script>
+// Script pour gérer la synchronisation entre le select manuel et le champ caché
+document.addEventListener('DOMContentLoaded', function() {
+    const selectManuel = document.getElementById('type_demenagement_id');
+    const champCache = document.querySelector('input[name="type_demenagement_id"]');
+    
+    // Synchroniser le select manuel avec le champ caché lors d'un changement
+    selectManuel.addEventListener('change', function() {
+        if (champCache) {
+            champCache.value = this.value;
+        }
+    });
+});
+</script>
 {% endblock %}

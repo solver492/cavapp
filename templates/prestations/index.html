@@ -62,6 +62,9 @@
                                 </td>
                                 <td>
                                     <div class="btn-group btn-group-sm">
+                                        <a href="{{ url_for('prestation.view', id=prestation.id) }}" class="btn btn-outline-info" title="Visualiser">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
                                         <a href="{{ url_for('prestation.edit', id=prestation.id) }}" class="btn btn-outline-primary" title="Modifier">
                                             <i class="fas fa-edit"></i>
                                         </a>

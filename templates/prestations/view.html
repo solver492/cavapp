@@ -1,0 +1,235 @@
+{% extends 'base.html' %}
+
+{% block title %}Détails de la Prestation - {{ config.APP_NAME }}{% endblock %}
+
+{% block content %}
+<div class="prestation-view-page">
+    <div class="page-title">
+        <h1><i class="fas fa-truck-moving"></i> Détails de la Prestation #{{ prestation.id }}</h1>
+        <div class="btn-group">
+            <a href="{{ url_for('prestation.index') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Retour à la liste
+            </a>
+            <a href="{{ url_for('prestation.edit', id=prestation.id) }}" class="btn btn-primary">
+                <i class="fas fa-edit"></i> Modifier
+            </a>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Informations générales -->
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-info-circle"></i> Informations générales</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-details">
+                        <tr>
+                            <th>Statut</th>
+                            <td>
+                                <span class="badge status-{{ prestation.statut|lower|replace(' ', '-') }}">
+                                    {{ prestation.statut }}
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Type de déménagement</th>
+                            <td>{{ prestation.type_demenagement }}</td>
+                        </tr>
+                        <tr>
+                            <th>Priorité</th>
+                            <td>{{ prestation.priorite }}</td>
+                        </tr>
+                        <tr>
+                            <th>Date de début</th>
+                            <td>{{ prestation.date_debut.strftime('%d/%m/%Y') }}</td>
+                        </tr>
+                        <tr>
+                            <th>Date de fin</th>
+                            <td>{{ prestation.date_fin.strftime('%d/%m/%Y') }}</td>
+                        </tr>
+                        <tr>
+                            <th>Montant</th>
+                            <td>{% if prestation.montant %}{{ prestation.montant }} €{% else %}Non défini{% endif %}</td>
+                        </tr>
+                        <tr>
+                            <th>Société</th>
+                            <td>{{ prestation.societe or 'Non définie' }}</td>
+                        </tr>
+                        <tr>
+                            <th>Date de création</th>
+                            <td>{{ prestation.date_creation.strftime('%d/%m/%Y %H:%M') }}</td>
+                        </tr>
+                        {% if prestation.tags %}
+                        <tr>
+                            <th>Tags</th>
+                            <td>
+                                {% for tag in prestation.tags.split(',') %}
+                                    <span class="badge bg-secondary">{{ tag }}</span>
+                                {% endfor %}
+                            </td>
+                        </tr>
+                        {% endif %}
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Client et adresses -->
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-user"></i> Client</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-details">
+                        <tr>
+                            <th>Nom</th>
+                            <td>
+                                <a href="{{ url_for('client.details', id=client.id) }}">
+                                    {{ client.nom }} {{ client.prenom }}
+                                </a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Email</th>
+                            <td>{{ client.email or 'Non défini' }}</td>
+                        </tr>
+                        <tr>
+                            <th>Téléphone</th>
+                            <td>{{ client.telephone or 'Non défini' }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-map-marker-alt"></i> Adresses</h5>
+                </div>
+                <div class="card-body">
+                    <h6>Adresse de départ</h6>
+                    <p>{{ prestation.adresse_depart }}</p>
+                    
+                    <h6>Adresse d'arrivée</h6>
+                    <p>{{ prestation.adresse_arrivee }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Transporteurs -->
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-truck"></i> Transporteurs assignés</h5>
+                </div>
+                <div class="card-body">
+                    {% if transporteurs %}
+                        <ul class="list-group">
+                            {% for transporteur in transporteurs %}
+                                <li class="list-group-item">
+                                    <i class="fas fa-user"></i> {{ transporteur.nom }} {{ transporteur.prenom }}
+                                    {% if transporteur.vehicule %}
+                                        <span class="badge bg-info">{{ transporteur.vehicule }}</span>
+                                    {% endif %}
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> Aucun transporteur assigné à cette prestation.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Observations -->
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-sticky-note"></i> Observations</h5>
+                </div>
+                <div class="card-body">
+                    {% if prestation.observations %}
+                        <p>{{ prestation.observations|replace('\n', '<br>')|safe }}</p>
+                    {% else %}
+                        <p class="text-muted">Aucune observation</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    {% if prestation.vehicules_suggeres %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-truck"></i> Véhicules suggérés</h5>
+                </div>
+                <div class="card-body">
+                    {{ prestation.vehicules_suggeres|replace('\n', '<br>')|safe }}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Factures associées -->
+    {% if prestation.factures %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-file-invoice-dollar"></i> Factures associées</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Numéro</th>
+                                    <th>Date d'émission</th>
+                                    <th>Montant TTC</th>
+                                    <th>Statut</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for facture in prestation.factures %}
+                                <tr>
+                                    <td>{{ facture.numero }}</td>
+                                    <td>{{ facture.date_emission.strftime('%d/%m/%Y') }}</td>
+                                    <td>{{ facture.montant_ttc }} €</td>
+                                    <td>
+                                        <span class="badge status-{{ facture.statut|lower|replace(' ', '-') }}">
+                                            {{ facture.statut }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('facture.view', id=facture.id) }}" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block page_scripts %}
+<script>
+    // Ici vous pouvez ajouter du JavaScript spécifique à cette page si nécessaire
+</script>
+{% endblock %}

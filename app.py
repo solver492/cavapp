@@ -45,6 +45,13 @@ def create_app():
     login_manager.login_message = 'Veuillez vous connecter pour accéder à cette page.'
     login_manager.login_message_category = 'warning'
     
+    # Ajouter des filtres personnalisés pour les templates
+    @app.template_filter('nl2br')
+    def nl2br_filter(text):
+        if not text:
+            return ""
+        return text.replace('\n', '<br>')
+    
     with app.app_context():
         # Import models here to avoid circular imports
         from models import User
@@ -60,18 +67,21 @@ def create_app():
             calendrier_bp
         )
         from routes.transporteur import transporteur_bp
+        from routes.api import api_bp
         from healthcheck import healthcheck as healthcheck_blueprint
         
+        # Blueprint enregistrement avec préfixes cohérents
         app.register_blueprint(auth_bp)
-        app.register_blueprint(dashboard_bp)
-        app.register_blueprint(client_bp)
-        app.register_blueprint(prestation_bp)
-        app.register_blueprint(facture_bp)
-        app.register_blueprint(stockage_bp)
-        app.register_blueprint(user_bp)
+        app.register_blueprint(dashboard_bp, url_prefix='/tableau-de-bord')
+        app.register_blueprint(client_bp, url_prefix='/clients')
+        app.register_blueprint(prestation_bp, url_prefix='/prestations')
+        app.register_blueprint(facture_bp, url_prefix='/factures')
+        app.register_blueprint(stockage_bp, url_prefix='/stockage')
+        app.register_blueprint(user_bp, url_prefix='/utilisateurs')
         app.register_blueprint(vehicule_bp, url_prefix='/vehicules')
-        app.register_blueprint(transporteur_bp)
-        app.register_blueprint(calendrier_bp)
+        app.register_blueprint(transporteur_bp, url_prefix='/transporteurs')
+        app.register_blueprint(calendrier_bp, url_prefix='/calendrier')
+        app.register_blueprint(api_bp, url_prefix='/api')  # Ajout du préfixe /api pour les routes API
         app.register_blueprint(healthcheck_blueprint)
         
         # Create database tables

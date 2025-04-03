@@ -210,12 +210,30 @@ def delete(id):
         return redirect(url_for('facture.index'))
     
     facture = Facture.query.get_or_404(id)
-    
     db.session.delete(facture)
     db.session.commit()
     
     flash('Facture supprimée avec succès!', 'success')
     return redirect(url_for('facture.index'))
+
+@facture_bp.route('/factures/view/<int:id>')
+@login_required
+def view(id):
+    if current_user.role == 'transporteur':
+        flash('Vous n\'avez pas l\'autorisation d\'accéder aux factures.', 'danger')
+        return redirect(url_for('dashboard.index'))
+    
+    facture = Facture.query.get_or_404(id)
+    client = Client.query.get(facture.client_id)
+    prestation = Prestation.query.get(facture.prestation_id) if facture.prestation_id else None
+    
+    return render_template(
+        'factures/view.html',
+        title=f'Facture {facture.numero}',
+        facture=facture,
+        client=client,
+        prestation=prestation
+    )
 
 @facture_bp.route('/factures/get-prestations/<int:client_id>')
 @login_required

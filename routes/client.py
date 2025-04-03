@@ -35,7 +35,10 @@ def index():
             (Client.telephone.ilike(search)) |
             (Client.email.ilike(search)) |
             (Client.type_client.ilike(search)) |
-            (Client.tags.ilike(search))
+            (Client.tags.ilike(search)) |
+            (Client.code_postal.ilike(search)) |
+            (Client.ville.ilike(search)) |
+            (Client.pays.ilike(search))
         )
     
     # Order by most recent first
@@ -47,6 +50,7 @@ def index():
         clients=clients,
         form=form,
         query=query,
+        search_query=query,
         show_archived=show_archived
     )
 
@@ -60,6 +64,9 @@ def add():
             nom=form.nom.data,
             prenom=form.prenom.data,
             adresse=form.adresse.data,
+            code_postal=form.code_postal.data,
+            ville=form.ville.data,
+            pays=form.pays.data,
             telephone=form.telephone.data,
             email=form.email.data,
             type_client=form.type_client.data,
@@ -103,6 +110,9 @@ def edit(id):
         client.nom = form.nom.data
         client.prenom = form.prenom.data
         client.adresse = form.adresse.data
+        client.code_postal = form.code_postal.data
+        client.ville = form.ville.data
+        client.pays = form.pays.data
         client.telephone = form.telephone.data
         client.email = form.email.data
         client.type_client = form.type_client.data
@@ -128,11 +138,28 @@ def edit(id):
         flash('Client mis à jour avec succès!', 'success')
         return redirect(url_for('client.index'))
     
+    # Récupérer les documents existants
+    documents = Document.query.filter_by(client_id=client.id).all()
+    
     return render_template(
         'clients/edit.html',
         title='Modifier un Client',
         form=form,
-        client=client
+        client=client,
+        documents=documents
+    )
+
+@client_bp.route('/clients/details/<int:id>')
+@login_required
+def details(id):
+    client = Client.query.get_or_404(id)
+    documents = Document.query.filter_by(client_id=client.id).all()
+    
+    return render_template(
+        'clients/details.html',
+        title=f'Fiche client - {client.nom} {client.prenom}',
+        client=client,
+        documents=documents
     )
 
 @client_bp.route('/clients/toggle-archive/<int:id>')

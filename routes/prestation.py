@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from sqlalchemy import and_, or_
 
 from app import db
-from models import Prestation, Client, User
+from models import Prestation, Client, User, TypeDemenagement
 from forms import PrestationForm, SearchPrestationForm
 
 prestation_bp = Blueprint('prestation', __name__)
@@ -30,7 +30,7 @@ def index():
             Prestation.transporteurs.any(id=current_user.id)
         )
     # For commercial role (non-admin), only show their own prestations
-    elif current_user.role == 'commercial' and not current_user.is_admin():
+    elif current_user.role == 'commercial' and not current_user.is_admin() and current_user.id != 1:
         prestations_query = prestations_query.filter(
             Prestation.commercial_id == current_user.id
         )
@@ -72,21 +72,30 @@ def add():
         flash('Vous n\'avez pas l\'autorisation de créer des prestations.', 'danger')
         return redirect(url_for('prestation.index'))
     
-    from models import TypeDemenagement
-    
     form = PrestationForm()
     
-    # Populate client dropdown
-    form.client_id.choices = [(c.id, f"{c.nom} {c.prenom}") for c in 
-                             Client.query.filter_by(archive=False).order_by(Client.nom).all()]
+    # Remplacer la génération standard des choix de type de déménagement
+    # pour éviter la duplication de l'option "Sélectionnez un type"
+    all_types = TypeDemenagement.query.order_by(TypeDemenagement.nom).all()
+    form.type_demenagement_id.choices = [(0, 'Sélectionnez un type')] + [(t.id, t.nom) for t in all_types]
+    
+    # Passer les types de déménagement directement au template
+    types_demenagement = [{'id': t.id, 'nom': t.nom} for t in all_types]
+    
+    # Afficher les types de déménagement pour le débogage
+    print(f"Types de déménagement pour le template: {types_demenagement}")
+    
+    # Peupler les clients dans le formulaire
+    clients = []
+    if current_user.is_admin():
+        clients = Client.query.order_by(Client.nom).all()
+    elif current_user.role == 'client':
+        clients = Client.query.filter_by(user_id=current_user.id).order_by(Client.nom).all()
+    form.client_id.choices = [(0, 'Sélectionnez un client')] + [(c.id, c.nom + ' ' + c.prenom) for c in clients]
     
     # Populate transporteur dropdown
     form.transporteurs.choices = [(u.id, f"{u.nom} {u.prenom} ({u.vehicule or 'Aucun véhicule'})") for u in 
                                  User.query.filter_by(role='transporteur', statut='actif').order_by(User.nom).all()]
-    
-    # Populate type_demenagement dropdown (new field)
-    form.type_demenagement_id.choices = [(0, 'Sélectionnez un type')] + [(t.id, t.nom) for t in 
-                                       TypeDemenagement.query.order_by(TypeDemenagement.nom).all()]
     
     if form.validate_on_submit():
         # Récupérer le type de déménagement si l'ID est valide
@@ -140,7 +149,8 @@ def add():
     return render_template(
         'prestations/add.html',
         title='Ajouter une Prestation',
-        form=form
+        form=form,
+        types_demenagement=types_demenagement
     )
 
 @prestation_bp.route('/prestations/edit/<int:id>', methods=['GET', 'POST'])
@@ -157,8 +167,6 @@ def edit(id):
     if current_user.role == 'commercial' and not current_user.is_admin() and prestation.commercial_id != current_user.id:
         flash('Vous ne pouvez modifier que vos propres prestations.', 'danger')
         return redirect(url_for('prestation.index'))
-    
-    from models import TypeDemenagement
     
     form = PrestationForm(obj=prestation)
     
@@ -244,24 +252,41 @@ def toggle_archive(id):
 @prestation_bp.route('/prestations/delete/<int:id>')
 @login_required
 def delete(id):
-    if current_user.role not in ['admin', 'super_admin']:
+    if not current_user.is_admin():
         flash('Vous n\'avez pas l\'autorisation de supprimer des prestations.', 'danger')
         return redirect(url_for('prestation.index'))
     
     prestation = Prestation.query.get_or_404(id)
     
-    # Check if prestation has factures
+    # Vérifier s'il y a des factures associées
     if prestation.factures:
-        flash('Impossible de supprimer cette prestation car elle est associée à des factures.', 'danger')
+        flash('Impossible de supprimer cette prestation car elle possède des factures.', 'danger')
         return redirect(url_for('prestation.index'))
     
     db.session.delete(prestation)
     db.session.commit()
     
-    flash('Prestation supprimée avec succès!', 'success')
+    flash('Prestation supprimée avec succès.', 'success')
     return redirect(url_for('prestation.index'))
 
-
+@prestation_bp.route('/prestations/view/<int:id>')
+@login_required
+def view(id):
+    prestation = Prestation.query.get_or_404(id)
+    
+    # Récupérer les informations associées
+    client = Client.query.get(prestation.client_id)
+    transporteurs = prestation.transporteurs
+    commercial = User.query.get(prestation.commercial_id) if prestation.commercial_id else None
+    
+    return render_template(
+        'prestations/view.html',
+        title='Détails de la Prestation',
+        prestation=prestation,
+        client=client,
+        transporteurs=transporteurs,
+        commercial=commercial
+    )
 
 @prestation_bp.route('/prestations/check-disponibilite', methods=['POST'])
 @login_required

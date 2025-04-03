@@ -1,0 +1,129 @@
+/* Styles personnalisés pour le calendrier et le logo */
+
+/* Couleurs foncées pour le calendrier */
+:root {
+    --fc-button-bg-color: #1a1a2e;
+    --fc-button-border-color: #16213e;
+    --fc-button-hover-bg-color: #0f3460;
+    --fc-button-hover-border-color: #0f3460;
+    --fc-button-active-bg-color: #0f3460;
+    --fc-button-active-border-color: #0f3460;
+}
+
+/* En-têtes du calendrier */
+.fc-theme-standard .fc-toolbar {
+    background-color: #1a1a2e;
+    color: white;
+    padding: 10px;
+    border-radius: 5px 5px 0 0;
+}
+
+.fc .fc-button-primary {
+    background-color: #16213e;
+    border-color: #16213e;
+    color: white;
+}
+
+.fc .fc-button-primary:hover {
+    background-color: #0f3460;
+    border-color: #0f3460;
+}
+
+.fc .fc-button-primary:not(:disabled).fc-button-active,
+.fc .fc-button-primary:not(:disabled):active {
+    background-color: #0f3460;
+    border-color: #0f3460;
+}
+
+/* Jours du calendrier */
+.fc-daygrid-day-top a {
+    color: #16213e;
+    font-weight: bold;
+}
+
+.fc-daygrid-day.fc-day-today {
+    background-color: rgba(15, 52, 96, 0.1);
+}
+
+.fc-daygrid-day-frame {
+    border-color: #16213e;
+}
+
+/* Événements du calendrier */
+.fc-event {
+    border-radius: 3px;
+    border: none;
+    padding: 2px;
+    font-size: 0.85em;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Statuts d'événements avec couleurs foncées */
+.fc-event.status-en-attente {
+    background-color: #d4a017;
+    border-color: #d4a017;
+}
+
+.fc-event.status-confirmee {
+    background-color: #0a58ca;
+    border-color: #0a58ca;
+}
+
+.fc-event.status-en-cours {
+    background-color: #0066cc;
+    border-color: #0066cc;
+}
+
+.fc-event.status-terminee {
+    background-color: #137547;
+    border-color: #137547;
+}
+
+.fc-event.status-annulee {
+    background-color: #a71d2a;
+    border-color: #a71d2a;
+}
+
+/* Style du logo dans la barre de navigation */
+.navbar-brand {
+    padding: 0;
+    height: 60px;
+    display: flex;
+    align-items: center;
+}
+
+.navbar-brand img {
+    max-height: 50px;
+    transition: transform 0.3s ease;
+}
+
+.navbar-brand img:hover {
+    transform: scale(1.05);
+}
+
+/* Espace pour les logos des trois sociétés */
+.company-logos {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background-color: rgba(255, 255, 255, 0.9);
+    border-top: 1px solid #e9ecef;
+    padding: 10px 0;
+    z-index: 1000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.company-logos .logo {
+    margin: 0 20px;
+    max-height: 40px;
+    filter: grayscale(50%);
+    transition: all 0.3s ease;
+}
+
+.company-logos .logo:hover {
+    filter: grayscale(0%);
+    transform: scale(1.1);
+}

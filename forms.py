@@ -26,9 +26,29 @@ class ClientForm(FlaskForm):
     nom = StringField('Nom', validators=[DataRequired()])
     prenom = StringField('Prénom', validators=[DataRequired()])
     adresse = TextAreaField('Adresse')
+    code_postal = StringField('Code Postal')
+    ville = StringField('Ville')
+    pays = SelectField('Pays', choices=[
+        ('France', 'France'),
+        ('Belgique', 'Belgique'),
+        ('Suisse', 'Suisse'),
+        ('Luxembourg', 'Luxembourg'),
+        ('Allemagne', 'Allemagne'),
+        ('Espagne', 'Espagne'),
+        ('Italie', 'Italie'),
+        ('Royaume-Uni', 'Royaume-Uni'),
+        ('Autre', 'Autre pays européen')
+    ], default='France')
     telephone = StringField('Téléphone')
     email = StringField('Email', validators=[Optional(), Email()])
-    type_client = StringField('Type de client')
+    type_client = SelectField('Type de client', choices=[
+        ('', 'Sélectionnez un type...'),
+        ('Particulier', 'Particulier'),
+        ('Professionnel', 'Professionnel'),
+        ('Entreprise', 'Entreprise'),
+        ('Association', 'Association'),
+        ('Administration', 'Administration')
+    ])
     tags = StringField('Tags (séparés par des virgules)')
     documents = FileField('Documents (PDF uniquement)', validators=[
         FileAllowed(['pdf'], 'PDF uniquement')
@@ -46,7 +66,12 @@ class PrestationForm(FlaskForm):
     # Champ caché pour la compatibilité avec les anciennes données
     type_demenagement = HiddenField('Type de déménagement (ancien)')
     tags = StringField('Tags (séparés par des virgules)')
-    societe = StringField('Société')
+    societe = SelectField('Société', choices=[
+        ('', 'Sélectionner une société'),
+        ('Cavalier', 'Cavalier'),
+        ('L\'écuyer', 'L\'écuyer'),
+        ('Nassali', 'Nassali')
+    ])
     montant = FloatField('Montant')
     priorite = SelectField('Priorité', choices=[
         ('Normale', 'Normale'),
@@ -67,6 +92,12 @@ class PrestationForm(FlaskForm):
 class FactureForm(FlaskForm):
     client_id = SelectField('Client', coerce=optional_int, validators=[DataRequired()])
     prestation_id = SelectField('Prestation', coerce=optional_int, validators=[Optional()])
+    societe = SelectField('Société', choices=[
+        ('', 'Sélectionner une société'),
+        ('Cavalier', 'Cavalier'),
+        ('L\'écuyer', 'L\'écuyer'),
+        ('Nassali', 'Nassali')
+    ])
     numero = StringField('Numéro de facture', validators=[DataRequired()])
     date_emission = DateField('Date d\'émission', validators=[DataRequired()], default=datetime.now)
     date_echeance = DateField('Date d\'échéance', validators=[DataRequired()], default=datetime.now() + timedelta(days=30))

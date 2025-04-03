@@ -22,6 +22,9 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/notification-flash.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/partners.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/prestations.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/custom-calendar.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/logo-slider.css') }}">
     
     {% block extra_css %}{% endblock %}
 </head>
@@ -36,11 +39,19 @@
                     <img src="{{ url_for('static', filename='img/partenaires/logo2.png') }}" alt="Partenaire 2" class="partner-logo">
                     <img src="{{ url_for('static', filename='img/partenaires/logo3.png') }}" alt="Partenaire 3" class="partner-logo">
                     <img src="{{ url_for('static', filename='img/partenaires/logo4.png') }}" alt="Partenaire 4" class="partner-logo">
+                    <img src="{{ url_for('static', filename='ph/logo.png') }}" alt="Logo 1" class="partner-logo">
+                    <img src="{{ url_for('static', filename='ph/logo2.png') }}" alt="Logo 2" class="partner-logo">
+                    <img src="{{ url_for('static', filename='ph/logo3.png') }}" alt="Logo 3" class="partner-logo">
+                    <img src="{{ url_for('static', filename='ph/logo4.png') }}" alt="Logo 4" class="partner-logo">
                     <!-- Répétition des logos pour l'animation continue -->
                     <img src="{{ url_for('static', filename='img/partenaires/logo1.png') }}" alt="Partenaire 1" class="partner-logo">
                     <img src="{{ url_for('static', filename='img/partenaires/logo2.png') }}" alt="Partenaire 2" class="partner-logo">
                     <img src="{{ url_for('static', filename='img/partenaires/logo3.png') }}" alt="Partenaire 3" class="partner-logo">
                     <img src="{{ url_for('static', filename='img/partenaires/logo4.png') }}" alt="Partenaire 4" class="partner-logo">
+                    <img src="{{ url_for('static', filename='ph/logo.png') }}" alt="Logo 1" class="partner-logo">
+                    <img src="{{ url_for('static', filename='ph/logo2.png') }}" alt="Logo 2" class="partner-logo">
+                    <img src="{{ url_for('static', filename='ph/logo3.png') }}" alt="Logo 3" class="partner-logo">
+                    <img src="{{ url_for('static', filename='ph/logo4.png') }}" alt="Logo 4" class="partner-logo">
                 </div>
             </div>
         </div>
@@ -52,53 +63,65 @@
             <nav class="navbar navbar-dark navbar-expand-lg">
                 <div class="container-fluid">
                     <a class="navbar-brand" href="{{ url_for('dashboard.index') }}">
-                        <img src="{{ url_for('static', filename='svg/logo.svg') }}" alt="{{ config.APP_NAME }}">
+                        <div class="logo-slideshow">
+                            <div class="logo-slide">
+                                <img src="{{ url_for('static', filename='svg/logo.svg') }}" alt="{{ config.APP_NAME }}">
+                            </div>
+                            <div class="logo-slide">
+                                <img src="{{ url_for('static', filename='ph/logo.png') }}" alt="Logo 1">
+                            </div>
+                            <div class="logo-slide">
+                                <img src="{{ url_for('static', filename='ph/logo2.png') }}" alt="Logo 2">
+                            </div>
+                            <div class="logo-slide">
+                                <img src="{{ url_for('static', filename='ph/logo3.png') }}" alt="Logo 3">
+                            </div>
+                            <div class="logo-slide">
+                                <img src="{{ url_for('static', filename='ph/logo4.png') }}" alt="Logo 4">
+                            </div>
+                        </div>
                     </a>
                     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain">
                         <span class="navbar-toggler-icon"></span>
                     </button>
                     <div class="collapse navbar-collapse" id="navbarMain">
                         <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                            <!-- Tableau de bord -->
                             <li class="nav-item">
                                 <a class="nav-link {% if request.endpoint == 'dashboard.index' %}active{% endif %}" href="{{ url_for('dashboard.index') }}">
-                                    <i class="fas fa-tachometer-alt"></i> Dashboard
+                                    <i class="fas fa-tachometer-alt"></i> Tableau de bord
                                 </a>
                             </li>
+                            
+                            <!-- Groupe Gestion des clients -->
                             <li class="nav-item">
                                 <a class="nav-link {% if request.endpoint.startswith('client.') %}active{% endif %}" href="{{ url_for('client.index') }}">
                                     <i class="fas fa-users"></i> Clients
                                 </a>
                             </li>
+                            
+                            <!-- Prestations (lien direct) -->
                             <li class="nav-item">
                                 <a class="nav-link {% if request.endpoint.startswith('prestation.') %}active{% endif %}" href="{{ url_for('prestation.index') }}">
                                     <i class="fas fa-truck-moving"></i> Prestations
                                 </a>
                             </li>
+                            
+                            <!-- Factures (lien direct) -->
                             <li class="nav-item">
                                 <a class="nav-link {% if request.endpoint.startswith('facture.') %}active{% endif %}" href="{{ url_for('facture.index') }}">
                                     <i class="fas fa-file-invoice-dollar"></i> Factures
                                 </a>
                             </li>
+                            
+                            <!-- Stockage -->
                             <li class="nav-item">
                                 <a class="nav-link {% if request.endpoint.startswith('stockage.') %}active{% endif %}" href="{{ url_for('stockage.index') }}">
-                                    <i class="fas fa-box"></i> Stockages
+                                    <i class="fas fa-box"></i> Stockage
                                 </a>
                             </li>
-                            <li class="nav-item">
-                                <a class="nav-link {% if request.endpoint.startswith('vehicule.') %}active{% endif %}" href="{{ url_for('vehicule.index') }}">
-                                    <i class="fas fa-truck"></i> Véhicules
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link {% if request.endpoint.startswith('transporteur.') %}active{% endif %}" href="{{ url_for('transporteur.index') }}">
-                                    <i class="fas fa-user-hard-hat"></i> Transporteurs
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link {% if request.endpoint.startswith('calendrier.') %}active{% endif %}" href="{{ url_for('calendrier.index') }}">
-                                    <i class="fas fa-calendar-alt"></i> Calendrier
-                                </a>
-                            </li>
+                            
+                            <!-- Utilisateurs (Admin seulement) -->
                             {% if current_user.is_admin %}
                             <li class="nav-item">
                                 <a class="nav-link {% if request.endpoint.startswith('user.') %}active{% endif %}" href="{{ url_for('user.index') }}">
@@ -106,6 +129,13 @@
                                 </a>
                             </li>
                             {% endif %}
+                            
+                            <!-- Calendrier -->
+                            <li class="nav-item">
+                                <a class="nav-link {% if request.endpoint.startswith('calendrier.') %}active{% endif %}" href="{{ url_for('calendrier.fullscreen') }}">
+                                    <i class="fas fa-calendar-alt"></i> Calendrier
+                                </a>
+                            </li>
                         </ul>
                         <ul class="navbar-nav">
                             <li class="nav-item dropdown">
@@ -113,8 +143,6 @@
                                     <i class="fas fa-user-circle"></i> {{ current_user.username }}
                                 </a>
                                 <ul class="dropdown-menu dropdown-menu-end">
-                                    <li><a class="dropdown-item" href="{{ url_for('auth.profile') }}"><i class="fas fa-id-card"></i> Mon profil</a></li>
-                                    <li><hr class="dropdown-divider"></li>
                                     <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}"><i class="fas fa-sign-out-alt"></i> Déconnexion</a></li>
                                 </ul>
                             </li>
@@ -149,7 +177,7 @@
     {% else %}
         <main class="main-content">
             <div class="container">
-                {% block content %}{% endblock %}
+                {% block auth_content %}{% endblock %}
             </div>
         </main>
     {% endif %}
@@ -170,6 +198,7 @@
     <!-- Custom JS -->
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     <script src="{{ url_for('static', filename='js/partners.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/logo-slider.js') }}"></script>
     
     {% block page_scripts %}{% endblock %}
 </body>

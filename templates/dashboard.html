@@ -6,8 +6,9 @@
 <div id="dashboard-page">
     <div class="page-title d-flex justify-content-between align-items-center">
         <h1><i class="fas fa-tachometer-alt"></i> Tableau de bord</h1>
-        <a href="{{ url_for('calendrier.fullscreen') }}" class="btn btn-primary">
-            <i class="fas fa-calendar-alt"></i> Calendrier plein écran
+        <a href="{{ url_for('calendrier.fullscreen') }}" class="btn btn-primary btn-lg pulse-button">
+            <i class="fas fa-calendar-alt"></i> <span class="d-none d-md-inline">Calendrier plein écran</span>
+            <i class="fas fa-expand-alt ml-1"></i>
         </a>
     </div>
     
@@ -99,8 +100,8 @@
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="card-title mb-0"><i class="fas fa-calendar-alt"></i> Calendrier des prestations</h5>
-                    <a href="{{ url_for('calendrier.fullscreen') }}" class="btn btn-sm btn-primary fullscreen-btn" title="Agrandir le calendrier">
-                        <i class="fas fa-expand-alt"></i>
+                    <a href="{{ url_for('calendrier.fullscreen') }}" class="btn btn-primary fullscreen-btn" title="Agrandir le calendrier">
+                        <i class="fas fa-expand-alt"></i> Plein écran
                     </a>
                 </div>
                 <div class="card-body p-0">
@@ -182,6 +183,40 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Style pour le bouton de calendrier plein écran */
+    .pulse-button {
+        box-shadow: 0 0 0 rgba(13, 110, 253, 0.4);
+        animation: pulse 2s infinite;
+        position: relative;
+        font-weight: bold;
+    }
+    
+    @keyframes pulse {
+        0% {
+            box-shadow: 0 0 0 0 rgba(13, 110, 253, 0.4);
+        }
+        70% {
+            box-shadow: 0 0 0 10px rgba(13, 110, 253, 0);
+        }
+        100% {
+            box-shadow: 0 0 0 0 rgba(13, 110, 253, 0);
+        }
+    }
+    
+    .fullscreen-btn {
+        font-weight: bold;
+        transition: all 0.3s ease;
+    }
+    
+    .fullscreen-btn:hover {
+        transform: scale(1.05);
+        background-color: #0d6efd;
+    }
+</style>
 {% endblock %}
 
 {% block page_scripts %}

@@ -1,5 +1,6 @@
 /**
  * Gestion des suggestions de véhicules en fonction du type de déménagement
+ * et des transporteurs disponibles avec ces véhicules
  */
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -7,12 +8,14 @@ document.addEventListener('DOMContentLoaded', function() {
     const typeDemenagementSelect = document.getElementById('type_demenagement_id');
     const transporteursSelect = document.getElementById('transporteurs');
     const vehiculesSuggeresTextarea = document.getElementById('vehicules_suggeres');
+    const dateDebutInput = document.getElementById('date_debut');
+    const dateFinInput = document.getElementById('date_fin');
     
     // Si les éléments n'existent pas sur la page, on s'arrête
     if (!typeDemenagementSelect || !transporteursSelect || !vehiculesSuggeresTextarea) return;
     
     // Fonction pour charger les véhicules recommandés
-    function loadVehiculesSuggeres() {
+    window.loadVehiculesSuggeres = function() {
         const typeDemenagementId = typeDemenagementSelect.value;
         
         // Si aucun type n'est sélectionné ou si c'est le type par défaut (0)
@@ -33,74 +36,161 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        // Récupérer les véhicules recommandés via l'API
-        fetch(`/vehicules/api/vehicules-recommandes/${typeDemenagementId}`)
+        // Mettre en état de chargement
+        vehiculesSuggeresTextarea.value = 'Chargement des suggestions de véhicules...';
+        vehiculesSuggeresTextarea.classList.add('loading-suggestions');
+        
+        // ÉTAPE 1 : Récupérer les véhicules recommandés pour ce type de déménagement
+        fetch(`/api/type-demenagement/${typeDemenagementId}/vehicules`)
             .then(response => {
                 if (!response.ok) {
-                    throw new Error(`Erreur HTTP: ${response.status}`);
+                    throw new Error(`Erreur HTTP: ${response.status} - ${response.statusText}`);
                 }
                 return response.json();
             })
             .then(data => {
+                // Vérifier si la réponse contient une erreur
+                if (!data.success) {
+                    throw new Error(data.message || 'Erreur lors de la récupération des véhicules');
+                }
+                
                 // Réinitialiser d'abord le highlighting
                 resetTransporteurHighlighting();
                 
-                // Afficher les types de véhicules recommandés
-                let message = 'Véhicules recommandés pour ce type de déménagement :\n';
-                
-                // Remplir automatiquement le champ "type_demenagement" (ancien) pour la compatibilité
+                // Remplir automatiquement l'ancien champ type_demenagement pour la compatibilité
                 if (document.getElementById('type_demenagement')) {
                     const typeNom = typeDemenagementSelect.options[typeDemenagementSelect.selectedIndex].text;
                     document.getElementById('type_demenagement').value = typeNom;
                 }
                 
-                if (!data.types_vehicule || data.types_vehicule.length === 0) {
-                    message += '- Aucun type de véhicule recommandé\n';
+                // Construire le message des véhicules recommandés
+                let message = 'Véhicules recommandés pour ce type de déménagement :\n';
+                
+                if (!data.vehicules || data.vehicules.length === 0) {
+                    message += '• Aucun véhicule recommandé pour ce type de déménagement\n';
                 } else {
-                    data.types_vehicule.forEach(vehicule => {
-                        message += `- ${vehicule.nom}${vehicule.capacite ? ' (' + vehicule.capacite + ')' : ''}\n`;
+                    data.vehicules.forEach(vehicule => {
+                        message += `• ${vehicule}\n`;
                     });
                 }
                 
-                message += '\nVéhicules recommandés pour ce type de déménagement\n';
+                // ÉTAPE 2 : Récupérer les transporteurs disponibles avec les dates
+                let dateDebut = dateDebutInput?.value || '';
+                let dateFin = dateFinInput?.value || '';
                 
-                // Sections des transporteurs
-                message += '\nRecommandés et disponibles\n';
-                let recommendedTransporteurs = '';
-                let otherTransporteurs = '\nAutres transporteurs disponibles\n';
+                // Si les dates ne sont pas renseignées, utiliser les dates par défaut (aujourd'hui et demain)
+                if (!dateDebut) {
+                    const aujourdhui = new Date();
+                    dateDebut = aujourdhui.toISOString().split('T')[0];
+                    
+                    if (dateDebutInput) {
+                        dateDebutInput.value = dateDebut;
+                    }
+                }
                 
-                // Afficher les transporteurs recommandés disponibles
-                if (!data.transporteurs || data.transporteurs.length === 0) {
-                    recommendedTransporteurs = '- Aucun transporteur disponible avec un véhicule adapté\n';
-                } else {
-                    data.transporteurs.forEach(transporteur => {
-                        recommendedTransporteurs += `🚚 ${transporteur.nom} - ${transporteur.type_vehicule} - ✅ Disponible\n`;
+                if (!dateFin) {
+                    const demain = new Date();
+                    demain.setDate(demain.getDate() + 1);
+                    dateFin = demain.toISOString().split('T')[0];
+                    
+                    if (dateFinInput) {
+                        dateFinInput.value = dateFin;
+                    }
+                }
+                
+                return fetch('/api/transporteurs-disponibles', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCsrfToken() // Fonction helper pour récupérer le token CSRF
+                    },
+                    body: JSON.stringify({
+                        date_debut: dateDebut,
+                        date_fin: dateFin,
+                        type_demenagement_id: typeDemenagementId
+                    })
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        // Gérer les erreurs tout en continuant à afficher les véhicules recommandés
+                        vehiculesSuggeresTextarea.classList.remove('loading-suggestions');
+                        message += '\nImpossible de récupérer les transporteurs disponibles actuellement.\n';
+                        message += 'Vous pouvez quand même sélectionner des transporteurs manuellement ci-dessous.\n';
+                        message += updateSelectedTransporteursCount(true);
+                        vehiculesSuggeresTextarea.value = message;
                         
-                        // Mettre en surbrillance les transporteurs recommandés dans la liste
-                        highlightTransporteur(transporteur.id);
+                        console.error(`Erreur HTTP: ${response.status} - ${response.statusText}`);
+                        return Promise.reject(`Erreur HTTP: ${response.status} - ${response.statusText}`);
+                    }
+                    return response.json().then(transporteursData => {
+                        // Vérifier si la réponse contient une erreur
+                        if (!transporteursData.success) {
+                            throw new Error(transporteursData.message || 'Erreur lors de la récupération des transporteurs');
+                        }
+                        return { vehiculesMessage: message, transporteursData };
                     });
-                }
+                });
+            })
+            .then(({ vehiculesMessage, transporteursData }) => {
+                // Enlever l'état de chargement
+                vehiculesSuggeresTextarea.classList.remove('loading-suggestions');
                 
-                // Afficher les autres transporteurs disponibles
-                if (data.autres_transporteurs && data.autres_transporteurs.length > 0) {
-                    data.autres_transporteurs.forEach(transporteur => {
-                        otherTransporteurs += `🚗 ${transporteur.nom} - ${transporteur.type_vehicule} - ✅ Disponible\n`;
-                    });
+                // Ajout des informations sur les transporteurs
+                let message = vehiculesMessage + '\n';
+                message += 'Transporteurs disponibles avec véhicules adaptés :\n';
+                
+                // Afficher les transporteurs disponibles et recommandés
+                if (!transporteursData.disponibles || transporteursData.disponibles.length === 0) {
+                    message += '• Aucun transporteur disponible avec un véhicule adapté\n';
                 } else {
-                    otherTransporteurs += '- Aucun autre transporteur disponible\n';
+                    const recommandes = transporteursData.disponibles.filter(t => t.recommande);
+                    const autres = transporteursData.disponibles.filter(t => !t.recommande);
+                    
+                    if (recommandes.length > 0) {
+                        recommandes.forEach(transporteur => {
+                            message += `• ✓ ${transporteur.nom} - ${transporteur.vehicule} (${transporteur.type_vehicule || 'Type non spécifié'})\n`;
+                            highlightTransporteur(transporteur.id);
+                        });
+                    } else {
+                        message += '• Aucun transporteur recommandé disponible\n';
+                    }
+                    
+                    if (autres.length > 0) {
+                        message += '\nAutres transporteurs disponibles :\n';
+                        autres.forEach(transporteur => {
+                            message += `• ${transporteur.nom} - ${transporteur.vehicule || 'Véhicule non spécifié'}\n`;
+                        });
+                    }
                 }
                 
-                message += recommendedTransporteurs + otherTransporteurs;
-                message += '\nMaintenez Ctrl pour sélectionner plusieurs transporteurs. Les transporteurs recommandés avec véhicules adaptés sont mis en évidence.\n';
-                message += '0 transporteur(s) sélectionné(s)';
+                // Afficher les transporteurs bientôt disponibles
+                if (transporteursData.bientot_disponibles && transporteursData.bientot_disponibles.length > 0) {
+                    message += '\nTransporteurs bientôt disponibles :\n';
+                    transporteursData.bientot_disponibles.forEach(transporteur => {
+                        message += `• ${transporteur.nom} - ${transporteur.vehicule || 'Véhicule non spécifié'} (disponible le ${transporteur.disponible_le})\n`;
+                    });
+                }
+                
+                message += '\nMaintenez Ctrl pour sélectionner plusieurs transporteurs. Les transporteurs recommandés avec véhicules adaptés sont mis en évidence en bleu.\n';
+                message += updateSelectedTransporteursCount(true);
                 
                 vehiculesSuggeresTextarea.value = message;
             })
             .catch(error => {
-                console.error('Erreur lors de la récupération des véhicules recommandés:', error);
-                vehiculesSuggeresTextarea.value = 'Erreur lors de la récupération des véhicules recommandés. Veuillez réessayer ou contacter l\'administrateur.';
+                console.error('Erreur lors de la récupération des suggestions:', error.message || error);
+                vehiculesSuggeresTextarea.classList.remove('loading-suggestions');
+                
+                // Message d'erreur mais avec informations utiles quand même
+                const typeNom = typeDemenagementSelect.options[typeDemenagementSelect.selectedIndex]?.text || 'inconnu';
+                
+                let errorMessage = `Erreur lors de la récupération des suggestions pour le type: ${typeNom}.\n\n`;
+                errorMessage += `Détail de l'erreur: ${error.message || error}\n\n`;
+                errorMessage += 'Vous pouvez quand même sélectionner des transporteurs manuellement ci-dessous.\n';
+                errorMessage += updateSelectedTransporteursCount(true);
+                
+                vehiculesSuggeresTextarea.value = errorMessage;
             });
-    }
+    };
     
     // Fonction pour mettre en surbrillance un transporteur dans la liste
     function highlightTransporteur(transporteurId) {
@@ -139,36 +229,35 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Fonction pour mettre à jour le compteur de transporteurs sélectionnés
-    function updateSelectedTransporteursCount() {
-        const selectedCount = [...transporteursSelect.selectedOptions].length;
-        const countDisplay = document.querySelector('.selected-transporteurs-count');
-        if (countDisplay) {
-            countDisplay.textContent = `${selectedCount} transporteur(s) sélectionné(s)`;
-        }
+    function updateSelectedTransporteursCount(returnOnly = false) {
+        const message = `${transporteursSelect.selectedOptions.length} transporteur(s) sélectionné(s)`;
         
-        // Mettre à jour aussi dans le textarea de suggestions
-        const text = vehiculesSuggeresTextarea.value;
-        const lastLineIndex = text.lastIndexOf('\n') + 1;
-        if (lastLineIndex > 0) {
-            const withoutLastLine = text.substring(0, lastLineIndex);
-            vehiculesSuggeresTextarea.value = withoutLastLine + `${selectedCount} transporteur(s) sélectionné(s)`;
+        if (returnOnly) {
+            return message;
+        } else {
+            vehiculesSuggeresTextarea.value += '\n\n' + message;
         }
     }
     
-    // Attacher les événements
-    typeDemenagementSelect.addEventListener('change', function() {
-        resetTransporteurHighlighting();
-        loadVehiculesSuggeres();
-    });
-    
-    // Écouter les changements de sélection de transporteurs
-    transporteursSelect.addEventListener('change', updateSelectedTransporteursCount);
-    
-    // Charger les suggestions initiales si un type de déménagement est déjà sélectionné
-    if (typeDemenagementSelect.value) {
-        loadVehiculesSuggeres();
+    // Helper pour récupérer le token CSRF
+    function getCsrfToken() {
+        return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
     }
     
-    // Initialiser le compteur
-    updateSelectedTransporteursCount();
+    // Gestion des événements
+    
+    // Mise à jour des suggestions de véhicules quand on change le type de déménagement
+    typeDemenagementSelect.addEventListener('change', window.loadVehiculesSuggeres);
+    
+    // Mise à jour du compteur de transporteurs sélectionnés
+    transporteursSelect.addEventListener('change', () => updateSelectedTransporteursCount());
+    
+    // Mise à jour des suggestions quand on change les dates
+    if (dateDebutInput) dateDebutInput.addEventListener('change', window.loadVehiculesSuggeres);
+    if (dateFinInput) dateFinInput.addEventListener('change', window.loadVehiculesSuggeres);
+    
+    // Chargement initial des suggestions si un type est déjà sélectionné
+    if (typeDemenagementSelect.value && typeDemenagementSelect.value !== '0') {
+        window.loadVehiculesSuggeres();
+    }
 });

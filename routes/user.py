@@ -98,7 +98,28 @@ def add():
     types_vehicules = TypeVehicule.query.all()
     form.type_vehicule_id.choices = [(0, 'Aucun')] + [(t.id, t.nom) for t in types_vehicules]
     
+    # Limiter les rôles disponibles en fonction du rôle actuel
+    role_choices = []
+    if current_user.role == 'super_admin':
+        role_choices = [
+            ('transporteur', 'Transporteur'),
+            ('commercial', 'Commercial'),
+            ('admin', 'Admin'),
+            ('super_admin', 'Super Admin')
+        ]
+    else:  # Admin standard
+        role_choices = [
+            ('transporteur', 'Transporteur'),
+            ('commercial', 'Commercial')
+        ]
+    form.role.choices = role_choices
+    
     if form.validate_on_submit():
+        # Vérification supplémentaire pour s'assurer qu'un admin ne peut pas créer d'admin ou super_admin
+        if current_user.role == 'admin' and form.role.data in ['admin', 'super_admin']:
+            flash('Vous n\'avez pas les permissions nécessaires pour créer un utilisateur avec ce rôle.', 'danger')
+            return render_template('users/add.html', title='Ajouter un Utilisateur', form=form)
+        
         # Check if username already exists
         existing_user = User.query.filter_by(username=form.username.data).first()
         if existing_user:
@@ -125,8 +146,6 @@ def add():
             permis_conduire=form.permis_conduire.data if form.permis_conduire.data else None,
             notes=form.notes.data if form.notes.data else None
         )
-        
-        # Set password
         user.set_password(form.password.data)
         
         db.session.add(user)
@@ -146,14 +165,14 @@ def add():
 def edit(id):
     user = User.query.get_or_404(id)
     
-    # Only admins can edit other users, users can edit their own profile
-    if current_user.id != user.id and not current_user.is_admin():
-        flash('Vous n\'avez pas l\'autorisation de modifier cet utilisateur.', 'danger')
+    # Vérifier si l'utilisateur a le droit de modifier ce compte
+    if not current_user.is_admin() and current_user.id != user.id:
+        flash('Vous n\'avez pas les permissions nécessaires pour modifier ce compte.', 'danger')
         return redirect(url_for('dashboard.index'))
     
-    # Non-admins cannot edit admin/super_admin accounts
-    if not current_user.is_admin() and user.role in ['admin', 'super_admin']:
-        flash('Vous n\'avez pas l\'autorisation de modifier un compte administrateur.', 'danger')
+    # Empêcher un admin de modifier un super_admin
+    if current_user.role == 'admin' and user.role == 'super_admin':
+        flash('Vous n\'avez pas les permissions nécessaires pour modifier un super administrateur.', 'danger')
         return redirect(url_for('dashboard.index'))
     
     form = UserForm(obj=user)
@@ -162,7 +181,30 @@ def edit(id):
     types_vehicules = TypeVehicule.query.all()
     form.type_vehicule_id.choices = [(0, 'Aucun')] + [(t.id, t.nom) for t in types_vehicules]
     
+    # Limiter les rôles disponibles en fonction du rôle actuel
+    role_choices = []
+    if current_user.role == 'super_admin':
+        role_choices = [
+            ('transporteur', 'Transporteur'),
+            ('commercial', 'Commercial'),
+            ('admin', 'Admin'),
+            ('super_admin', 'Super Admin')
+        ]
+    elif current_user.role == 'admin':
+        role_choices = [
+            ('transporteur', 'Transporteur'),
+            ('commercial', 'Commercial')
+        ]
+    else:  # L'utilisateur modifie son propre profil
+        role_choices = [(user.role, user.role.capitalize())]
+    form.role.choices = role_choices
+    
     if form.validate_on_submit():
+        # Vérification supplémentaire pour s'assurer qu'un admin ne peut pas promouvoir vers admin ou super_admin
+        if current_user.role == 'admin' and form.role.data in ['admin', 'super_admin']:
+            flash('Vous n\'avez pas les permissions nécessaires pour définir ce rôle.', 'danger')
+            return render_template('users/edit.html', title='Modifier un Utilisateur', form=form, user=user)
+        
         # Check if username changed and already exists
         if form.username.data != user.username:
             existing_user = User.query.filter_by(username=form.username.data).first()
@@ -227,6 +269,11 @@ def delete(id):
     # Super admin can delete anyone except other super admins
     if user.role == 'super_admin' and current_user.role != 'super_admin':
         flash('Vous n\'avez pas l\'autorisation de supprimer un super administrateur.', 'danger')
+        return redirect(url_for('user.index'))
+    
+    # Admin peut supprimer uniquement les commerciaux et transporteurs
+    if current_user.role == 'admin' and user.role in ['admin', 'super_admin']:
+        flash('Vous n\'avez pas l\'autorisation de supprimer un administrateur.', 'danger')
         return redirect(url_for('user.index'))
     
     # Check if user has prestations

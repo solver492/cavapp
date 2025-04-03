@@ -54,6 +54,9 @@ class Client(db.Model):
     nom = db.Column(db.String(64), nullable=False)
     prenom = db.Column(db.String(64), nullable=False)
     adresse = db.Column(db.Text, nullable=True)
+    code_postal = db.Column(db.String(10), nullable=True)
+    ville = db.Column(db.String(100), nullable=True)
+    pays = db.Column(db.String(50), default='France', nullable=True)
     telephone = db.Column(db.String(20), nullable=True)
     email = db.Column(db.String(120), nullable=True)
     type_client = db.Column(db.String(50), nullable=True)
@@ -122,6 +125,7 @@ class Prestation(db.Model):
     archive = db.Column(db.Boolean, default=False)
     stockage_id = db.Column(db.Integer, db.ForeignKey('stockage.id'), nullable=True)
     date_creation = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    vehicules_suggeres = db.Column(db.Text, nullable=True)  # Ajout pour synchroniser avec la base de données
     
     transporteurs = db.relationship('User', secondary=prestation_transporteurs, back_populates='prestations')
     commercial = db.relationship('User', foreign_keys=[commercial_id], backref='prestations_creees')
@@ -137,6 +141,7 @@ class Facture(db.Model):
     client_id = db.Column(db.Integer, db.ForeignKey('client.id'), nullable=False)
     prestation_id = db.Column(db.Integer, db.ForeignKey('prestation.id'), nullable=True)
     stockage_id = db.Column(db.Integer, db.ForeignKey('stockage.id'), nullable=True)
+    societe = db.Column(db.String(50), nullable=True)  # Ajout du champ société
     montant_ht = db.Column(db.Float, nullable=False)
     taux_tva = db.Column(db.Float, nullable=False, default=20.0)
     montant_ttc = db.Column(db.Float, nullable=False)

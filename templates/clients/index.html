@@ -37,10 +37,12 @@
                     <tr>
                         <th>Nom</th>
                         <th>Prénom</th>
+                        <th>Type</th>
                         <th>Adresse</th>
+                        <th>Ville</th>
                         <th>Téléphone</th>
                         <th>Email</th>
-                        <th>Date de création</th>
+                        <th>Date</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -50,12 +52,21 @@
                             <tr {% if client.archive %}class="table-secondary"{% endif %}>
                                 <td>{{ client.nom }}</td>
                                 <td>{{ client.prenom }}</td>
-                                <td>{{ client.adresse|truncate(30) }}</td>
+                                <td>{{ client.type_client }}</td>
+                                <td>{{ client.adresse|truncate(20) }}</td>
+                                <td>
+                                  {% if client.code_postal or client.ville %}
+                                    {{ client.code_postal }} {{ client.ville }}
+                                  {% endif %}
+                                </td>
                                 <td>{{ client.telephone }}</td>
                                 <td>{{ client.email }}</td>
                                 <td>{{ client.date_creation.strftime('%d/%m/%Y') }}</td>
                                 <td>
                                     <div class="btn-group btn-group-sm">
+                                        <a href="{{ url_for('client.details', id=client.id) }}" class="btn btn-outline-info" title="Fiche client">
+                                            <i class="fas fa-id-card"></i>
+                                        </a>
                                         <a href="{{ url_for('client.edit', id=client.id) }}" class="btn btn-outline-primary" title="Modifier">
                                             <i class="fas fa-edit"></i>
                                         </a>
@@ -78,7 +89,7 @@
                         {% endfor %}
                     {% else %}
                         <tr>
-                            <td colspan="7" class="text-center py-3">
+                            <td colspan="9" class="text-center py-3">
                                 <div class="alert alert-info mb-0">
                                     <i class="fas fa-info-circle"></i> Aucun client n'a été ajouté pour le moment.
                                 </div>

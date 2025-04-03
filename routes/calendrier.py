@@ -92,7 +92,7 @@ def api_prestations_calendrier():
             
             event = {
                 'id': prestation.id,
-                'title': client_title,
+                'title': f'{prestation.type_demenagement} - {client_title}',
                 'start': start_date,
                 'end': end_date,
                 'extendedProps': {
@@ -121,11 +121,12 @@ def api_prestations_calendrier():
         
         # Événement pour aujourd'hui
         events.append({
-            'id': 999,
+            'id': 'test-999',  # Utiliser un préfixe "test-" pour identifier les événements de test
             'title': 'Déménagement Test',
             'start': today.isoformat(),
             'end': (today + timedelta(hours=4)).isoformat(),
             'extendedProps': {
+                'test': True,  # Marquer comme événement de test
                 'statut': 'En attente',
                 'adresse_depart': '123 Rue de Test, Paris',
                 'adresse_arrivee': '456 Avenue de Test, Paris',
@@ -137,11 +138,12 @@ def api_prestations_calendrier():
         # Événement pour demain
         tomorrow = today + timedelta(days=1)
         events.append({
-            'id': 998,
+            'id': 'test-998',  # Utiliser un préfixe "test-" pour identifier les événements de test
             'title': 'Transport Test',
             'start': tomorrow.isoformat(),
             'end': (tomorrow + timedelta(hours=2)).isoformat(),
             'extendedProps': {
+                'test': True,  # Marquer comme événement de test
                 'statut': 'Confirmée',
                 'adresse_depart': '789 Boulevard de Test, Paris',
                 'adresse_arrivee': '101 Place de Test, Paris',
@@ -154,40 +156,78 @@ def api_prestations_calendrier():
     
     return jsonify(events)
 
-@calendrier_bp.route('/api/prestations/<int:id>/details')
+@calendrier_bp.route('/api/prestations/<id>/details')
 @login_required
 def api_prestation_details(id):
     import logging
+    logging.basicConfig(level=logging.INFO)
     logging.info(f"Récupération des détails pour la prestation {id}, utilisateur: {current_user.username}")
     
-    prestation = Prestation.query.get_or_404(id)
-    logging.info(f"Prestation trouvée: {prestation.id}")
+    # Vérifier si c'est un événement de test
+    if isinstance(id, str) and id.startswith('test-'):
+        logging.info(f"Génération des détails pour un événement de test: {id}")
+        # Retourner des données factices pour les événements de test
+        test_data = {
+            'id': id,
+            'client_id': 0,
+            'client_nom': 'Client',
+            'client_prenom': 'Test',
+            'client_telephone': '01 23 45 67 89',
+            'date_debut': datetime.now().strftime('%d/%m/%Y'),
+            'date_fin': (datetime.now() + datetime.timedelta(days=1)).strftime('%d/%m/%Y'),
+            'adresse_depart': '123 Rue de Test, Paris',
+            'adresse_arrivee': '456 Avenue de Test, Paris',
+            'type_demenagement': 'Déménagement Test',
+            'statut': 'En attente',
+            'observations': 'Ceci est un événement de test pour démontrer le fonctionnement du calendrier.',
+            'transporteurs': [
+                {'id': 1, 'nom': 'Dupont', 'prenom': 'Jean'},
+                {'id': 2, 'nom': 'Martin', 'prenom': 'Pierre'}
+            ]
+        }
+        return jsonify(test_data)
     
-    # Vérifier les droits d'accès
-    if current_user.role == 'transporteur' and current_user not in prestation.transporteurs:
-        logging.warning(f"Accès non autorisé pour l'utilisateur {current_user.username} à la prestation {id}")
-        return jsonify({'error': 'Accès non autorisé'}), 403
-    
-    transporteurs = [{
-        'id': t.id,
-        'nom': t.nom,
-        'prenom': t.prenom
-    } for t in prestation.transporteurs]
-    
-    result = {
-        'id': prestation.id,
-        'client_id': prestation.client_id,
-        'client_nom': prestation.client.nom if prestation.client else '',
-        'client_prenom': prestation.client.prenom if prestation.client else '',
-        'client_telephone': prestation.client.telephone if prestation.client else '',
-        'date_debut': prestation.date_debut.strftime('%d/%m/%Y'),
-        'date_fin': prestation.date_fin.strftime('%d/%m/%Y'),
-        'adresse_depart': prestation.adresse_depart,
-        'adresse_arrivee': prestation.adresse_arrivee,
-        'type_demenagement': prestation.type_demenagement,
-        'statut': prestation.statut,
-        'observations': prestation.observations,
-        'transporteurs': transporteurs
-    }
-    
-    return jsonify(result)
+    try:
+        # Essayer de convertir l'ID en entier si c'est une chaîne numérique
+        if isinstance(id, str) and id.isdigit():
+            id = int(id)
+        
+        # Récupérer la prestation
+        prestation = Prestation.query.get_or_404(id)
+        logging.info(f"Prestation trouvée: {prestation.id}")
+        
+        # Vérifier les droits d'accès
+        if current_user.role == 'transporteur' and current_user not in prestation.transporteurs:
+            logging.warning(f"Accès non autorisé pour l'utilisateur {current_user.username} à la prestation {id}")
+            return jsonify({'error': 'Accès non autorisé'}), 403
+        
+        transporteurs = [{
+            'id': t.id,
+            'nom': t.nom,
+            'prenom': t.prenom
+        } for t in prestation.transporteurs]
+        
+        result = {
+            'id': prestation.id,
+            'client_id': prestation.client_id,
+            'client_nom': prestation.client.nom if prestation.client else '',
+            'client_prenom': prestation.client.prenom if prestation.client else '',
+            'client_telephone': prestation.client.telephone if prestation.client else '',
+            'date_debut': prestation.date_debut.strftime('%d/%m/%Y'),
+            'date_fin': prestation.date_fin.strftime('%d/%m/%Y'),
+            'adresse_depart': prestation.adresse_depart,
+            'adresse_arrivee': prestation.adresse_arrivee,
+            'type_demenagement': prestation.type_demenagement,
+            'statut': prestation.statut,
+            'observations': prestation.observations,
+            'transporteurs': transporteurs
+        }
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        logging.error(f"Erreur lors de la récupération des détails: {str(e)}")
+        return jsonify({
+            'error': 'Erreur serveur',
+            'message': f"Impossible de récupérer les détails de la prestation: {str(e)}"
+        }), 500

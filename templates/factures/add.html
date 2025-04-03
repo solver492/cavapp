@@ -44,9 +44,9 @@
                     </div>
                     
                     <div class="col-md-6">
-                        <label for="mode_paiement" class="form-label">{{ form.mode_paiement.label.text }}</label>
-                        {{ form.mode_paiement(class="form-control" + (" is-invalid" if form.mode_paiement.errors else ""), id="mode_paiement") }}
-                        {% for error in form.mode_paiement.errors %}
+                        <label for="societe" class="form-label">{{ form.societe.label.text }}</label>
+                        {{ form.societe(class="form-control" + (" is-invalid" if form.societe.errors else ""), id="societe") }}
+                        {% for error in form.societe.errors %}
                             <div class="invalid-feedback">{{ error }}</div>
                         {% endfor %}
                     </div>
@@ -54,18 +54,28 @@
                 
                 <div class="row mb-3">
                     <div class="col-md-6">
-                        <div class="d-flex align-items-center">
-                            <label for="numero" class="form-label me-2">{{ form.numero.label.text }} <span class="text-danger">*</span></label>
-                            <button type="button" id="generate-invoice-number" class="btn btn-sm btn-outline-secondary">
-                                <i class="fas fa-sync-alt"></i> Générer
-                            </button>
-                        </div>
-                        {{ form.numero(class="form-control" + (" is-invalid" if form.numero.errors else ""), id="numero") }}
-                        {% for error in form.numero.errors %}
+                        <label for="mode_paiement" class="form-label">{{ form.mode_paiement.label.text }}</label>
+                        {{ form.mode_paiement(class="form-control" + (" is-invalid" if form.mode_paiement.errors else ""), id="mode_paiement") }}
+                        {% for error in form.mode_paiement.errors %}
                             <div class="invalid-feedback">{{ error }}</div>
                         {% endfor %}
                     </div>
                     
+                    <div class="col-md-6">
+                        <label for="numero" class="form-label">{{ form.numero.label.text }} <span class="text-danger">*</span></label>
+                        <div class="d-flex align-items-center">
+                            {{ form.numero(class="form-control" + (" is-invalid" if form.numero.errors else ""), id="numero") }}
+                            <button type="button" id="generate-invoice-number" class="btn btn-sm btn-outline-secondary">
+                                <i class="fas fa-sync-alt"></i> Générer
+                            </button>
+                        </div>
+                        {% for error in form.numero.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
                     <div class="col-md-6">
                         <label for="taux_tva" class="form-label">{{ form.taux_tva.label.text }} <span class="text-danger">*</span></label>
                         {{ form.taux_tva(class="form-control" + (" is-invalid" if form.taux_tva.errors else ""), id="taux_tva") }}
@@ -73,9 +83,7 @@
                             <div class="invalid-feedback">{{ error }}</div>
                         {% endfor %}
                     </div>
-                </div>
-                
-                <div class="row mb-3">
+                    
                     <div class="col-md-6">
                         <label for="date_emission" class="form-label">{{ form.date_emission.label.text }} <span class="text-danger">*</span></label>
                         {{ form.date_emission(class="form-control" + (" is-invalid" if form.date_emission.errors else ""), id="date_emission", type="date") }}
@@ -83,7 +91,9 @@
                             <div class="invalid-feedback">{{ error }}</div>
                         {% endfor %}
                     </div>
-                    
+                </div>
+                
+                <div class="row mb-3">
                     <div class="col-md-6">
                         <label for="notes" class="form-label">{{ form.notes.label.text }}</label>
                         {{ form.notes(class="form-control" + (" is-invalid" if form.notes.errors else ""), id="notes") }}
@@ -91,9 +101,7 @@
                             <div class="invalid-feedback">{{ error }}</div>
                         {% endfor %}
                     </div>
-                </div>
-                
-                <div class="row mb-3">
+                    
                     <div class="col-md-6">
                         <label for="date_echeance" class="form-label">{{ form.date_echeance.label.text }} <span class="text-danger">*</span></label>
                         {{ form.date_echeance(class="form-control" + (" is-invalid" if form.date_echeance.errors else ""), id="date_echeance", type="date") }}
