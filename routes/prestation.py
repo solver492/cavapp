@@ -249,6 +249,7 @@ def check_disponibilite():
     """
     Vérifie la disponibilité des transporteurs pour une période donnée
     Retourne la liste des transporteurs disponibles
+    Prend en compte le type de déménagement pour suggérer les transporteurs avec des véhicules adaptés
     """
     if not current_user.is_commercial():
         return jsonify({'error': 'Non autorisé'}), 403
@@ -257,6 +258,7 @@ def check_disponibilite():
     date_debut = request.form.get('date_debut')
     date_fin = request.form.get('date_fin')
     prestation_id = request.form.get('prestation_id')
+    type_demenagement_id = request.form.get('type_demenagement_id')
     
     if not date_debut or not date_fin:
         return jsonify({'error': 'Dates requises'}), 400
@@ -305,15 +307,79 @@ def check_disponibilite():
     # Récupérer tous les transporteurs actifs
     transporteurs = User.query.filter_by(role='transporteur', statut='actif').all()
     
+    # Récupérer les types de véhicules recommandés pour ce type de déménagement
+    vehicules_recommandes = []
+    vehicule_ids_recommandes = []
+    
+    if type_demenagement_id and type_demenagement_id != '0':
+        from models import TypeDemenagement
+        
+        try:
+            type_demenagement = TypeDemenagement.query.get(int(type_demenagement_id))
+            if type_demenagement:
+                vehicules_recommandes = type_demenagement.types_vehicule
+                vehicule_ids_recommandes = [v.id for v in vehicules_recommandes]
+        except (ValueError, TypeError):
+            pass  # Si le type_demenagement_id n'est pas un entier valide
+    
     # Préparer la réponse
     result = []
+    soon_available = []  # Transporteurs qui seront bientôt disponibles
+    
     for transporteur in transporteurs:
+        # Déterminer si le transporteur a un véhicule adapté au type de déménagement
+        vehicule_adapte = not vehicule_ids_recommandes or (
+            transporteur.type_vehicule_id and transporteur.type_vehicule_id in vehicule_ids_recommandes
+        )
+        
+        # Vérifier la disponibilité
+        disponible = transporteur.id not in transporteurs_occupes
+        
+        # Déterminer quand le transporteur sera disponible s'il ne l'est pas maintenant
+        prochaine_disponibilite = None
+        if not disponible:
+            # Trouver la prochaine date où le transporteur sera disponible
+            prestations_transporteur = Prestation.query.filter(
+                Prestation.transporteurs.any(id=transporteur.id),
+                Prestation.statut != 'Annulée',
+                Prestation.archive == False,
+                Prestation.date_fin >= datetime.now()
+            ).order_by(Prestation.date_fin).all()
+            
+            if prestations_transporteur:
+                # Prendre la date de fin de la dernière prestation
+                prochaine_disponibilite = prestations_transporteur[-1].date_fin.strftime('%d/%m/%Y')
+                
+                # Si la dernière prestation se termine après la période demandée
+                # et que le véhicule est adapté, ajouter à la liste des bientôt disponibles
+                if prestations_transporteur[-1].date_fin > date_fin and vehicule_adapte:
+                    soon_available.append({
+                        'id': transporteur.id,
+                        'nom': transporteur.nom,
+                        'prenom': transporteur.prenom,
+                        'vehicule': transporteur.vehicule,
+                        'type_vehicule': transporteur.type_vehicule.nom if transporteur.type_vehicule else 'Non spécifié',
+                        'disponible_le': prochaine_disponibilite
+                    })
+        
+        # Ajouter à la liste principale
         result.append({
             'id': transporteur.id,
             'nom': transporteur.nom,
             'prenom': transporteur.prenom,
             'vehicule': transporteur.vehicule,
-            'disponible': transporteur.id not in transporteurs_occupes
+            'vehicule_adapte': vehicule_adapte,
+            'type_vehicule': transporteur.type_vehicule.nom if transporteur.type_vehicule else 'Non spécifié',
+            'disponible': disponible,
+            'prochaine_disponibilite': prochaine_disponibilite
         })
     
-    return jsonify(result)
+    # Retourner les résultats avec la liste des bientôt disponibles
+    return jsonify({
+        'transporteurs': result,
+        'soon_available': soon_available,
+        'vehicules_recommandes': [
+            {'id': v.id, 'nom': v.nom, 'capacite': v.capacite}
+            for v in vehicules_recommandes
+        ]
+    })
