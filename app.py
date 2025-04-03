@@ -53,9 +53,6 @@ def create_app():
         def load_user(user_id):
             return User.query.get(int(user_id))
         
-        # Create database tables
-        db.create_all()
-        
         # Register blueprints
         from routes import (
             auth_bp, dashboard_bp, client_bp, 
@@ -63,6 +60,7 @@ def create_app():
             calendrier_bp
         )
         from routes.transporteur import transporteur_bp
+        from healthcheck import healthcheck as healthcheck_blueprint
         
         app.register_blueprint(auth_bp)
         app.register_blueprint(dashboard_bp)
@@ -74,6 +72,10 @@ def create_app():
         app.register_blueprint(vehicule_bp, url_prefix='/vehicules')
         app.register_blueprint(transporteur_bp)
         app.register_blueprint(calendrier_bp)
+        app.register_blueprint(healthcheck_blueprint)
+        
+        # Create database tables
+        db.create_all()
         
         # Create default admin user if it doesn't exist
         from utils import create_default_admin
