@@ -21,41 +21,13 @@
     <!-- Custom CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/notification-flash.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/partners.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/prestations.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/custom-calendar.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/logo-slider.css') }}">
     
     {% block extra_css %}{% endblock %}
 </head>
 <body>
     {% if current_user.is_authenticated %}
-        <!-- Partenaires avec défilement automatique -->
-        <div class="partners-section">
-            <div class="partners-container">
-                <div class="partners-scroll">
-                    <!-- Première série de logos -->
-                    <img src="{{ url_for('static', filename='img/partenaires/logo1.png') }}" alt="Partenaire 1" class="partner-logo">
-                    <img src="{{ url_for('static', filename='img/partenaires/logo2.png') }}" alt="Partenaire 2" class="partner-logo">
-                    <img src="{{ url_for('static', filename='img/partenaires/logo3.png') }}" alt="Partenaire 3" class="partner-logo">
-                    <img src="{{ url_for('static', filename='img/partenaires/logo4.png') }}" alt="Partenaire 4" class="partner-logo">
-                    <img src="{{ url_for('static', filename='ph/logo.png') }}" alt="Logo 1" class="partner-logo">
-                    <img src="{{ url_for('static', filename='ph/logo2.png') }}" alt="Logo 2" class="partner-logo">
-                    <img src="{{ url_for('static', filename='ph/logo3.png') }}" alt="Logo 3" class="partner-logo">
-                    <img src="{{ url_for('static', filename='ph/logo4.png') }}" alt="Logo 4" class="partner-logo">
-                    <!-- Répétition des logos pour l'animation continue -->
-                    <img src="{{ url_for('static', filename='img/partenaires/logo1.png') }}" alt="Partenaire 1" class="partner-logo">
-                    <img src="{{ url_for('static', filename='img/partenaires/logo2.png') }}" alt="Partenaire 2" class="partner-logo">
-                    <img src="{{ url_for('static', filename='img/partenaires/logo3.png') }}" alt="Partenaire 3" class="partner-logo">
-                    <img src="{{ url_for('static', filename='img/partenaires/logo4.png') }}" alt="Partenaire 4" class="partner-logo">
-                    <img src="{{ url_for('static', filename='ph/logo.png') }}" alt="Logo 1" class="partner-logo">
-                    <img src="{{ url_for('static', filename='ph/logo2.png') }}" alt="Logo 2" class="partner-logo">
-                    <img src="{{ url_for('static', filename='ph/logo3.png') }}" alt="Logo 3" class="partner-logo">
-                    <img src="{{ url_for('static', filename='ph/logo4.png') }}" alt="Logo 4" class="partner-logo">
-                </div>
-            </div>
-        </div>
-
         <header>
             <div class="app-header">
                 <h2>Déménagement • Transport • Stockage</h2>
@@ -197,8 +169,6 @@
     
     <!-- Custom JS -->
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/partners.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/logo-slider.js') }}"></script>
     
     {% block page_scripts %}{% endblock %}
 </body>
