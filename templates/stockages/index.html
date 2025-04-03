@@ -11,7 +11,7 @@
                     <li class="breadcrumb-item active" aria-current="page">Stockages</li>
                 </ol>
             </nav>
-            {% if current_user.has_role('commercial', 'admin', 'super_admin') %}
+            {% if current_user.role in ['commercial', 'admin', 'super_admin'] %}
             <div class="btn-toolbar mb-2 mb-md-0 float-right">
                 <div class="btn-group mr-2">
                     <a href="{{ url_for('stockage.add') }}" class="btn btn-primary">

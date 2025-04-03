@@ -58,6 +58,11 @@
                                     <i class="fas fa-file-invoice-dollar"></i> Facturation
                                 </a>
                             </li>
+                            <li class="nav-item">
+                                <a class="nav-link {% if request.endpoint.startswith('stockage.') %}active{% endif %}" href="{{ url_for('stockage.index') }}">
+                                    <i class="fas fa-boxes"></i> Stockage
+                                </a>
+                            </li>
                             {% if current_user.is_admin() %}
                             <li class="nav-item">
                                 <a class="nav-link {% if request.endpoint.startswith('user.') %}active{% endif %}" href="{{ url_for('user.index') }}">
