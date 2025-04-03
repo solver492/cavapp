@@ -51,15 +51,57 @@ def index():
     pie_labels = [p[0] for p in prestation_types]
     pie_data = [p[1] for p in prestation_types]
     
+    # Calculate additional stats for the dashboard
+    today = datetime.utcnow().date()
+    next_month = today + timedelta(days=30)
+    
+    # New clients this month
+    new_clients_month = Client.query.filter(
+        extract('month', Client.date_creation) == today.month,
+        extract('year', Client.date_creation) == today.year
+    ).count()
+    
+    # Upcoming and in-progress prestations
+    prestations_a_venir = Prestation.query.filter(
+        Prestation.date_debut > today,
+        Prestation.archive == False
+    ).count()
+    
+    prestations_en_cours = Prestation.query.filter(
+        Prestation.date_debut <= today,
+        Prestation.date_fin >= today,
+        Prestation.archive == False
+    ).count()
+    
+    # Count unpaid invoices
+    factures_impayees = Facture.query.filter_by(statut='En attente').count()
+    
+    # Total revenue from paid invoices
+    total_revenue = db.session.query(func.sum(Facture.montant_ttc)).filter(
+        Facture.statut == 'Payée'
+    ).scalar() or 0
+    
+    # Recent activities
+    recent_factures = Facture.query.order_by(Facture.date_creation.desc()).limit(5).all()
+    
+    # Compile stats into a dictionary
+    stats = {
+        'total_clients': clients_count,
+        'new_clients_month': new_clients_month,
+        'prestations_a_venir': prestations_a_venir,
+        'prestations_en_cours': prestations_en_cours,
+        'factures_impayees': factures_impayees,
+        'total_factures': factures_count,
+        'total_revenue': float(total_revenue),
+        'recent_clients': recent_clients,
+        'recent_prestations': upcoming_prestations,
+        'recent_factures': recent_factures
+    }
+    
     return render_template(
         'dashboard.html',
         title='Tableau de Bord',
-        clients_count=clients_count,
-        prestations_count=prestations_count,
-        factures_count=factures_count,
-        recent_clients=recent_clients,
-        upcoming_prestations=upcoming_prestations,
-        unpaid_invoices=unpaid_invoices,
+        stats=stats,
         monthly_revenue=monthly_revenue,
         pie_labels=pie_labels,
         pie_data=pie_data
