@@ -89,6 +89,12 @@ def add():
                                        TypeDemenagement.query.order_by(TypeDemenagement.nom).all()]
     
     if form.validate_on_submit():
+        # Récupérer le type de déménagement
+        type_dem = TypeDemenagement.query.get(form.type_demenagement_id.data)
+        if not type_dem:
+            flash('Type de déménagement invalide.', 'danger')
+            return render_template('prestations/add.html', title='Ajouter une Prestation', form=form)
+        
         # Créer la prestation avec les données du formulaire
         prestation = Prestation(
             client_id=form.client_id.data,
@@ -97,18 +103,15 @@ def add():
             date_fin=form.date_fin.data,
             adresse_depart=form.adresse_depart.data,
             adresse_arrivee=form.adresse_arrivee.data,
-            type_demenagement=form.type_demenagement.data,
+            type_demenagement=type_dem.nom,  # Utiliser le nom comme chaîne pour la rétrocompatibilité
             tags=form.tags.data,
             societe=form.societe.data,
             montant=form.montant.data,
             priorite=form.priorite.data,
             statut=form.statut.data,
-            observations=form.observations.data
+            observations=form.observations.data,
+            type_demenagement_id=form.type_demenagement_id.data  # Définir directement l'ID
         )
-        
-        # Ajouter le lien vers le type de déménagement (nouvelle relation)
-        if form.type_demenagement_id.data and form.type_demenagement_id.data > 0:
-            prestation.type_demenagement_id = form.type_demenagement_id.data
         
         # Add transporteurs
         for t_id in form.transporteurs.data:
@@ -165,12 +168,18 @@ def edit(id):
             form.type_demenagement_id.data = prestation.type_demenagement_id
     
     if form.validate_on_submit():
+        # Récupérer le type de déménagement sélectionné
+        type_dem = TypeDemenagement.query.get(form.type_demenagement_id.data)
+        if not type_dem:
+            flash('Type de déménagement invalide.', 'danger')
+            return render_template('prestations/edit.html', title='Modifier une Prestation', form=form, prestation=prestation)
+            
         prestation.client_id = form.client_id.data
         prestation.date_debut = form.date_debut.data
         prestation.date_fin = form.date_fin.data
         prestation.adresse_depart = form.adresse_depart.data
         prestation.adresse_arrivee = form.adresse_arrivee.data
-        prestation.type_demenagement = form.type_demenagement.data
+        prestation.type_demenagement = type_dem.nom  # Utiliser le nom du type de déménagement sélectionné
         prestation.tags = form.tags.data
         prestation.societe = form.societe.data
         prestation.montant = form.montant.data
@@ -178,11 +187,8 @@ def edit(id):
         prestation.statut = form.statut.data
         prestation.observations = form.observations.data
         
-        # Update type de déménagement (nouvelle relation)
-        if form.type_demenagement_id.data and form.type_demenagement_id.data > 0:
-            prestation.type_demenagement_id = form.type_demenagement_id.data
-        else:
-            prestation.type_demenagement_id = None
+        # Mettre à jour le type de déménagement ID
+        prestation.type_demenagement_id = form.type_demenagement_id.data
         
         # Update transporteurs
         prestation.transporteurs = []
@@ -406,15 +412,21 @@ def api_transporteurs_calendrier():
     
     # Convertir les dates ISO
     try:
-        date_debut = datetime.fromisoformat(debut.replace('Z', '+00:00'))
-        date_fin = datetime.fromisoformat(fin.replace('Z', '+00:00'))
-    except ValueError:
-        # Essayer un autre format si celui-ci échoue
-        try:
-            date_debut = datetime.strptime(debut, '%Y-%m-%d')
-            date_fin = datetime.strptime(fin, '%Y-%m-%d')
-        except ValueError:
-            return jsonify({'error': 'Format de date invalide'}), 400
+        # Essayer de gérer divers formats possibles de date
+        if 'T' in debut:
+            # Format ISO avec temps (ex: '2025-04-01T00:00:00')
+            debut = debut.split('T')[0]  # Extraire seulement la date
+            fin = fin.split('T')[0] if 'T' in fin else fin
+        
+        # Appliquer le format standard de date
+        date_debut = datetime.strptime(debut, '%Y-%m-%d')
+        date_fin = datetime.strptime(fin, '%Y-%m-%d')
+        
+        # Ajuster la date de fin pour inclure toute la journée
+        date_fin = date_fin.replace(hour=23, minute=59, second=59)
+    except ValueError as e:
+        print(f"Erreur de conversion de date: {e}. Debut: {debut}, Fin: {fin}")
+        return jsonify({'error': 'Format de date invalide'}), 400
     
     # Récupérer les prestations pour cette période
     prestations_query = Prestation.query.filter(

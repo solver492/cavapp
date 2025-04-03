@@ -120,6 +120,7 @@ class Prestation(db.Model):
     statut = db.Column(db.String(50), default='En attente')
     observations = db.Column(db.Text, nullable=True)
     archive = db.Column(db.Boolean, default=False)
+    stockage_id = db.Column(db.Integer, db.ForeignKey('stockage.id'), nullable=True)
     date_creation = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     
     transporteurs = db.relationship('User', secondary=prestation_transporteurs, back_populates='prestations')
@@ -135,6 +136,7 @@ class Facture(db.Model):
     numero = db.Column(db.String(50), unique=True, nullable=False)
     client_id = db.Column(db.Integer, db.ForeignKey('client.id'), nullable=False)
     prestation_id = db.Column(db.Integer, db.ForeignKey('prestation.id'), nullable=True)
+    stockage_id = db.Column(db.Integer, db.ForeignKey('stockage.id'), nullable=True)
     montant_ht = db.Column(db.Float, nullable=False)
     taux_tva = db.Column(db.Float, nullable=False, default=20.0)
     montant_ttc = db.Column(db.Float, nullable=False)
@@ -147,3 +149,72 @@ class Facture(db.Model):
     
     def __repr__(self):
         return f"Facture {self.numero}"
+
+# Modèle pour les articles stockés dans un emplacement
+class StockageArticle(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    stockage_id = db.Column(db.Integer, db.ForeignKey('stockage.id'), nullable=False)
+    article_id = db.Column(db.Integer, db.ForeignKey('article_stockage.id'), nullable=False)
+    quantite = db.Column(db.Integer, default=1)
+    date_ajout = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    
+    stockage = db.relationship('Stockage', backref='stockage_articles')
+    article = db.relationship('ArticleStockage', backref='stockage_articles')
+    
+    def __repr__(self):
+        return f"{self.article.nom} (x{self.quantite}) dans {self.stockage.reference}"
+
+class Stockage(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    client_id = db.Column(db.Integer, db.ForeignKey('client.id'), nullable=False)
+    reference = db.Column(db.String(50), unique=True, nullable=False)
+    date_debut = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    date_fin = db.Column(db.DateTime, nullable=True)  # Peut être indéfinie pour un stockage sans date de fin
+    statut = db.Column(db.String(50), default='Actif')  # Actif, Terminé, En attente
+    montant_mensuel = db.Column(db.Float, nullable=False)
+    caution = db.Column(db.Float, nullable=True)
+    emplacement = db.Column(db.String(100), nullable=False)  # Ex: "Zone A, Étagère 3, Case 12"
+    volume_total = db.Column(db.Float, nullable=True)  # Volume total en m³
+    poids_total = db.Column(db.Float, nullable=True)  # Poids total en kg
+    observations = db.Column(db.Text, nullable=True)
+    archive = db.Column(db.Boolean, default=False)
+    date_creation = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    
+    client = db.relationship('Client', backref='stockages')
+    factures = db.relationship('Facture', backref='stockage', lazy=True)
+    prestations = db.relationship('Prestation', backref='stockage', lazy=True, foreign_keys="Prestation.stockage_id")
+    
+    def __repr__(self):
+        return f"Stockage {self.reference} - {self.client.nom} {self.client.prenom}"
+    
+    def calculer_cout_total(self):
+        """Calcule le coût total depuis le début du stockage jusqu'à maintenant ou la date de fin"""
+        debut = self.date_debut
+        fin = self.date_fin if self.date_fin else datetime.utcnow()
+        
+        # Calculer le nombre de mois de stockage
+        mois = (fin.year - debut.year) * 12 + fin.month - debut.month
+        if fin.day < debut.day:
+            mois -= 1
+        
+        # Si moins d'un mois, compter comme un mois
+        mois = max(1, mois)
+        
+        return self.montant_mensuel * mois
+
+class ArticleStockage(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    nom = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    categorie = db.Column(db.String(50), nullable=True)  # Meubles, Cartons, Électroménager, etc.
+    dimensions = db.Column(db.String(100), nullable=True)  # Format LxlxH en cm
+    volume = db.Column(db.Float, nullable=True)  # En m³
+    poids = db.Column(db.Float, nullable=True)  # En kg
+    valeur_declaree = db.Column(db.Float, nullable=True)  # Valeur déclarée pour l'assurance
+    code_barre = db.Column(db.String(100), nullable=True)  # Code barre pour le suivi
+    photo = db.Column(db.String(255), nullable=True)  # Chemin vers la photo
+    fragile = db.Column(db.Boolean, default=False)
+    date_creation = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    
+    def __repr__(self):
+        return f"{self.nom} ({self.categorie or 'Non catégorisé'})"

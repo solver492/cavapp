@@ -3,7 +3,7 @@ from flask_wtf.file import FileField, FileAllowed
 from wtforms import (
     StringField, PasswordField, SubmitField, TextAreaField, 
     SelectField, DateField, FloatField, BooleanField, 
-    SelectMultipleField, HiddenField
+    SelectMultipleField, HiddenField, IntegerField
 )
 from wtforms.validators import DataRequired, Email, Length, Optional, EqualTo
 from datetime import datetime, timedelta
@@ -33,14 +33,9 @@ class PrestationForm(FlaskForm):
     date_fin = DateField('Date de fin', validators=[DataRequired()], default=datetime.now() + timedelta(days=1))
     adresse_depart = TextAreaField('Adresse de départ', validators=[DataRequired()])
     adresse_arrivee = TextAreaField('Adresse d\'arrivée', validators=[DataRequired()])
-    type_demenagement_id = SelectField('Type de déménagement', coerce=int, validators=[Optional()])
-    type_demenagement = SelectField('Type de déménagement (ancien)', validators=[DataRequired()], 
-                                   choices=[
-                                       ('Déménagement Résidentiel', 'Déménagement Résidentiel'),
-                                       ('Déménagement Commercial', 'Déménagement Commercial'),
-                                       ('Transport de marchandises', 'Transport de marchandises'),
-                                       ('Stockage', 'Stockage')
-                                   ])
+    type_demenagement_id = SelectField('Type de déménagement', coerce=int, validators=[DataRequired()])
+    # Champ caché pour la compatibilité avec les anciennes données
+    type_demenagement = HiddenField('Type de déménagement (ancien)')
     tags = StringField('Tags (séparés par des virgules)')
     societe = StringField('Société')
     montant = FloatField('Montant')
@@ -154,3 +149,53 @@ class SearchUserForm(FlaskForm):
     role = SelectField('Rôle')
     statut = SelectField('Statut')
     submit = SubmitField('Rechercher')
+
+class StockageForm(FlaskForm):
+    client_id = SelectField('Client', coerce=int, validators=[DataRequired()])
+    reference = StringField('Référence', validators=[DataRequired()])
+    date_debut = DateField('Date de début', validators=[DataRequired()], default=datetime.now)
+    date_fin = DateField('Date de fin (facultative)', validators=[Optional()])
+    montant_mensuel = FloatField('Montant mensuel', validators=[DataRequired()])
+    caution = FloatField('Caution', validators=[Optional()])
+    emplacement = StringField('Emplacement', validators=[DataRequired()])
+    volume_total = FloatField('Volume total (m³)', validators=[Optional()])
+    poids_total = FloatField('Poids total (kg)', validators=[Optional()])
+    statut = SelectField('Statut', choices=[
+        ('Actif', 'Actif'),
+        ('En attente', 'En attente'),
+        ('Terminé', 'Terminé')
+    ])
+    observations = TextAreaField('Observations')
+    submit = SubmitField('Enregistrer')
+
+class ArticleStockageForm(FlaskForm):
+    nom = StringField('Nom', validators=[DataRequired()])
+    description = TextAreaField('Description')
+    categorie = SelectField('Catégorie', choices=[
+        ('Meubles', 'Meubles'),
+        ('Cartons', 'Cartons'),
+        ('Électroménager', 'Électroménager'),
+        ('Vêtements', 'Vêtements'),
+        ('Vaisselle', 'Vaisselle'),
+        ('Matériel professionnel', 'Matériel professionnel'),
+        ('Divers', 'Divers')
+    ])
+    dimensions = StringField('Dimensions (LxlxH cm)')
+    volume = FloatField('Volume (m³)', validators=[Optional()])
+    poids = FloatField('Poids (kg)', validators=[Optional()])
+    valeur_declaree = FloatField('Valeur déclarée (€)', validators=[Optional()])
+    code_barre = StringField('Code barre')
+    photo = FileField('Photo')
+    fragile = BooleanField('Article fragile')
+    quantite = IntegerField('Quantité', default=1)
+    submit = SubmitField('Ajouter cet article')
+
+class SearchStockageForm(FlaskForm):
+    client_id = SelectField('Client', coerce=int)
+    statut = SelectField('Statut')
+    date_debut = DateField('Date début')
+    date_fin = DateField('Date fin')
+    reference = StringField('Référence')
+    archives = BooleanField('Afficher les stockages archivés')
+    submit = SubmitField('Filtrer')
+    reset = SubmitField('Réinitialiser')
