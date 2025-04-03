@@ -61,7 +61,7 @@ def create_app():
         # Register blueprints
         from routes import (
             auth_bp, dashboard_bp, client_bp, 
-            prestation_bp, facture_bp, stockage_bp, user_bp
+            prestation_bp, facture_bp, stockage_bp, user_bp, vehicule_bp
         )
         
         app.register_blueprint(auth_bp)
@@ -71,6 +71,7 @@ def create_app():
         app.register_blueprint(facture_bp)
         app.register_blueprint(stockage_bp)
         app.register_blueprint(user_bp)
+        app.register_blueprint(vehicule_bp, url_prefix='/vehicules')
         
         # Create default admin user if it doesn't exist
         from utils import create_default_admin
