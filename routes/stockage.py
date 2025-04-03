@@ -317,12 +317,23 @@ def add_article():
     
     return redirect(url_for('stockage.edit', id=stockage.id))
 
-@stockage_bp.route('/article/<int:id>/remove', methods=['GET'])
+@stockage_bp.route('/article/remove', methods=['GET'])
 @login_required
 @role_required('commercial', 'admin', 'super_admin')
-def remove_article(id):
+def remove_article():
     """Retirer un article d'un stockage"""
-    stockage_article = StockageArticle.query.get_or_404(id)
+    stockage_id = request.args.get('stockage_id', type=int)
+    article_id = request.args.get('article_id', type=int)
+    
+    if not stockage_id or not article_id:
+        flash('Identifiants manquants pour supprimer l\'article.', 'danger')
+        return redirect(url_for('stockage.index'))
+        
+    stockage_article = StockageArticle.query.filter_by(
+        stockage_id=stockage_id, 
+        article_id=article_id
+    ).first_or_404()
+    
     stockage_id = stockage_article.stockage_id
     stockage = Stockage.query.get_or_404(stockage_id)
     

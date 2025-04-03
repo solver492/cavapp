@@ -152,9 +152,9 @@ class Facture(db.Model):
 
 # Modèle pour les articles stockés dans un emplacement
 class StockageArticle(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    stockage_id = db.Column(db.Integer, db.ForeignKey('stockage.id'), nullable=False)
-    article_id = db.Column(db.Integer, db.ForeignKey('article_stockage.id'), nullable=False)
+    # Table utilise une clé primaire composée
+    stockage_id = db.Column(db.Integer, db.ForeignKey('stockage.id'), primary_key=True)
+    article_id = db.Column(db.Integer, db.ForeignKey('article_stockage.id'), primary_key=True)
     quantite = db.Column(db.Integer, default=1)
     date_ajout = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     
@@ -162,7 +162,9 @@ class StockageArticle(db.Model):
     article = db.relationship('ArticleStockage', backref='stockage_articles')
     
     def __repr__(self):
-        return f"{self.article.nom} (x{self.quantite}) dans {self.stockage.reference}"
+        if hasattr(self, 'article') and self.article and hasattr(self.article, 'nom') and hasattr(self, 'stockage') and self.stockage and hasattr(self.stockage, 'reference'):
+            return f"{self.article.nom} (x{self.quantite}) dans {self.stockage.reference}"
+        return f"Article {self.article_id} (x{self.quantite}) dans Stockage {self.stockage_id}"
 
 class Stockage(db.Model):
     id = db.Column(db.Integer, primary_key=True)

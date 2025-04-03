@@ -260,7 +260,7 @@
                                         {% if item.article.poids %}{{ item.article.poids|round(2) }} kg{% endif %}
                                     </td>
                                     <td>
-                                        <a href="{{ url_for('stockage.remove_article', id=item.id) }}" class="btn btn-sm btn-danger" 
+                                        <a href="{{ url_for('stockage.remove_article', stockage_id=item.stockage_id, article_id=item.article_id) }}" class="btn btn-sm btn-danger" 
                                            onclick="return confirm('Êtes-vous sûr de vouloir retirer cet article?')">
                                             <i class="fas fa-trash"></i>
                                         </a>
