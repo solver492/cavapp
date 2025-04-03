@@ -32,7 +32,7 @@ def login():
         user.last_login = datetime.utcnow()
         db.session.commit()
         
-        login_user(user, remember=form.remember_me.data)
+        login_user(user, remember=True)
         
         # Redirect to the page the user was trying to access
         next_page = request.args.get('next')
