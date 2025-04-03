@@ -15,15 +15,41 @@ document.addEventListener('DOMContentLoaded', function() {
         const toggleVehicleField = function() {
             if (roleSelect.value === 'transporteur') {
                 vehicleGroup.classList.remove('d-none');
-                const vehicleInput = vehicleGroup.querySelector('input');
-                if (vehicleInput) {
-                    vehicleInput.setAttribute('required', 'required');
+                
+                // Rendre le champ permis de conduire obligatoire
+                const permisInput = document.getElementById('permis_conduire');
+                if (permisInput) {
+                    permisInput.setAttribute('required', 'required');
+                }
+                
+                // Rendre le champ type de véhicule obligatoire
+                const typeVehiculeSelect = document.getElementById('type_vehicule_id');
+                if (typeVehiculeSelect) {
+                    typeVehiculeSelect.setAttribute('required', 'required');
+                }
+                
+                // Rendre le champ description véhicule obligatoire
+                const vehiculeInput = document.getElementById('vehicule');
+                if (vehiculeInput) {
+                    vehiculeInput.setAttribute('required', 'required');
                 }
             } else {
                 vehicleGroup.classList.add('d-none');
-                const vehicleInput = vehicleGroup.querySelector('input');
-                if (vehicleInput) {
-                    vehicleInput.removeAttribute('required');
+                
+                // Enlever le caractère obligatoire des champs
+                const permisInput = document.getElementById('permis_conduire');
+                if (permisInput) {
+                    permisInput.removeAttribute('required');
+                }
+                
+                const typeVehiculeSelect = document.getElementById('type_vehicule_id');
+                if (typeVehiculeSelect) {
+                    typeVehiculeSelect.removeAttribute('required');
+                }
+                
+                const vehiculeInput = document.getElementById('vehicule');
+                if (vehiculeInput) {
+                    vehiculeInput.removeAttribute('required');
                 }
             }
         };

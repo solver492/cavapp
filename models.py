@@ -26,6 +26,8 @@ class User(UserMixin, db.Model):
     statut = db.Column(db.String(20), nullable=False, default='actif')
     vehicule = db.Column(db.String(100), nullable=True)
     type_vehicule_id = db.Column(db.Integer, db.ForeignKey('type_vehicule.id'), nullable=True)
+    permis_conduire = db.Column(db.String(50), nullable=True)
+    notes = db.Column(db.Text, nullable=True)
     derniere_connexion = db.Column(db.DateTime, nullable=True)
     date_creation = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     

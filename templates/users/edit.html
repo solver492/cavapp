@@ -94,12 +94,46 @@
                 </div>
                 
                 <div id="vehicle-group" class="mb-4 {% if user.role != 'transporteur' %}d-none{% endif %}">
-                    <label for="vehicule" class="form-label">{{ form.vehicule.label.text }}</label>
-                    {{ form.vehicule(class="form-control" + (" is-invalid" if form.vehicule.errors else ""), id="vehicule") }}
-                    {% for error in form.vehicule.errors %}
-                        <div class="invalid-feedback">{{ error }}</div>
-                    {% endfor %}
-                    <div class="form-text">Ex: Fourgon 12m³, Camion 30m³, etc.</div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="permis_conduire" class="form-label">{{ form.permis_conduire.label.text }}</label>
+                            {{ form.permis_conduire(class="form-control" + (" is-invalid" if form.permis_conduire.errors else ""), id="permis_conduire") }}
+                            {% for error in form.permis_conduire.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                            <div class="form-text">Numéro du permis de conduire du transporteur</div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="type_vehicule_id" class="form-label">{{ form.type_vehicule_id.label.text }}</label>
+                            {{ form.type_vehicule_id(class="form-control" + (" is-invalid" if form.type_vehicule_id.errors else ""), id="type_vehicule_id") }}
+                            {% for error in form.type_vehicule_id.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <label for="vehicule" class="form-label">{{ form.vehicule.label.text }}</label>
+                            {{ form.vehicule(class="form-control" + (" is-invalid" if form.vehicule.errors else ""), id="vehicule") }}
+                            {% for error in form.vehicule.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                            <div class="form-text">Ex: Immatriculation, détails spécifiques, etc.</div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <label for="notes" class="form-label">{{ form.notes.label.text }}</label>
+                            {{ form.notes(class="form-control" + (" is-invalid" if form.notes.errors else ""), id="notes", rows="3") }}
+                            {% for error in form.notes.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                            <div class="form-text">Informations supplémentaires sur le transporteur</div>
+                        </div>
+                    </div>
                 </div>
                 {% else %}
                     <div class="mb-4">

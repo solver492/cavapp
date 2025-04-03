@@ -121,7 +121,9 @@ def add():
             role=form.role.data,
             statut=form.statut.data,
             vehicule=form.vehicule.data if form.vehicule.data else None,
-            type_vehicule_id=form.type_vehicule_id.data if form.type_vehicule_id.data != 0 else None
+            type_vehicule_id=form.type_vehicule_id.data if form.type_vehicule_id.data != 0 else None,
+            permis_conduire=form.permis_conduire.data if form.permis_conduire.data else None,
+            notes=form.notes.data if form.notes.data else None
         )
         
         # Set password
@@ -187,6 +189,8 @@ def edit(id):
             user.statut = form.statut.data
             user.vehicule = form.vehicule.data if form.vehicule.data else None
             user.type_vehicule_id = form.type_vehicule_id.data if form.type_vehicule_id.data != 0 else None
+            user.permis_conduire = form.permis_conduire.data if form.permis_conduire.data else None
+            user.notes = form.notes.data if form.notes.data else None
         
         # Update password if provided
         if form.password.data:

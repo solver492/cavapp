@@ -119,8 +119,10 @@ class UserForm(FlaskForm):
         ('actif', 'Actif'),
         ('inactif', 'Inactif')
     ])
+    permis_conduire = StringField('Numéro de permis de conduire')
     vehicule = StringField('Véhicule (description)')
     type_vehicule_id = SelectField('Type de véhicule', coerce=int, validators=[Optional()])
+    notes = TextAreaField('Notes')
     submit = SubmitField('Enregistrer')
 
     def validate_password(self, field):
