@@ -72,6 +72,8 @@ def add():
         flash('Vous n\'avez pas l\'autorisation de créer des prestations.', 'danger')
         return redirect(url_for('prestation.index'))
     
+    from models import TypeDemenagement
+    
     form = PrestationForm()
     
     # Populate client dropdown
@@ -82,7 +84,12 @@ def add():
     form.transporteurs.choices = [(u.id, f"{u.nom} {u.prenom} ({u.vehicule or 'Aucun véhicule'})") for u in 
                                  User.query.filter_by(role='transporteur', statut='actif').order_by(User.nom).all()]
     
+    # Populate type_demenagement dropdown (new field)
+    form.type_demenagement_id.choices = [(0, 'Sélectionnez un type')] + [(t.id, t.nom) for t in 
+                                       TypeDemenagement.query.order_by(TypeDemenagement.nom).all()]
+    
     if form.validate_on_submit():
+        # Créer la prestation avec les données du formulaire
         prestation = Prestation(
             client_id=form.client_id.data,
             commercial_id=current_user.id,  # Associer le commercial actuel
@@ -98,6 +105,10 @@ def add():
             statut=form.statut.data,
             observations=form.observations.data
         )
+        
+        # Ajouter le lien vers le type de déménagement (nouvelle relation)
+        if form.type_demenagement_id.data and form.type_demenagement_id.data > 0:
+            prestation.type_demenagement_id = form.type_demenagement_id.data
         
         # Add transporteurs
         for t_id in form.transporteurs.data:
@@ -132,6 +143,8 @@ def edit(id):
         flash('Vous ne pouvez modifier que vos propres prestations.', 'danger')
         return redirect(url_for('prestation.index'))
     
+    from models import TypeDemenagement
+    
     form = PrestationForm(obj=prestation)
     
     # Populate client dropdown
@@ -142,8 +155,14 @@ def edit(id):
     form.transporteurs.choices = [(u.id, f"{u.nom} {u.prenom} ({u.vehicule or 'Aucun véhicule'})") for u in 
                                  User.query.filter_by(role='transporteur', statut='actif').order_by(User.nom).all()]
     
+    # Populate type_demenagement dropdown (new field)
+    form.type_demenagement_id.choices = [(0, 'Sélectionnez un type')] + [(t.id, t.nom) for t in 
+                                       TypeDemenagement.query.order_by(TypeDemenagement.nom).all()]
+    
     if request.method == 'GET':
         form.transporteurs.data = [t.id for t in prestation.transporteurs]
+        if prestation.type_demenagement_id:
+            form.type_demenagement_id.data = prestation.type_demenagement_id
     
     if form.validate_on_submit():
         prestation.client_id = form.client_id.data
@@ -158,6 +177,12 @@ def edit(id):
         prestation.priorite = form.priorite.data
         prestation.statut = form.statut.data
         prestation.observations = form.observations.data
+        
+        # Update type de déménagement (nouvelle relation)
+        if form.type_demenagement_id.data and form.type_demenagement_id.data > 0:
+            prestation.type_demenagement_id = form.type_demenagement_id.data
+        else:
+            prestation.type_demenagement_id = None
         
         # Update transporteurs
         prestation.transporteurs = []

@@ -33,7 +33,8 @@ class PrestationForm(FlaskForm):
     date_fin = DateField('Date de fin', validators=[DataRequired()], default=datetime.now() + timedelta(days=1))
     adresse_depart = TextAreaField('Adresse de départ', validators=[DataRequired()])
     adresse_arrivee = TextAreaField('Adresse d\'arrivée', validators=[DataRequired()])
-    type_demenagement = SelectField('Type de déménagement', validators=[DataRequired()], 
+    type_demenagement_id = SelectField('Type de déménagement', coerce=int, validators=[Optional()])
+    type_demenagement = SelectField('Type de déménagement (ancien)', validators=[DataRequired()], 
                                    choices=[
                                        ('Déménagement Résidentiel', 'Déménagement Résidentiel'),
                                        ('Déménagement Commercial', 'Déménagement Commercial'),
@@ -56,6 +57,7 @@ class PrestationForm(FlaskForm):
         ('Annulée', 'Annulée')
     ])
     observations = TextAreaField('Observations')
+    vehicules_suggeres = TextAreaField('Véhicules suggérés', render_kw={'readonly': True})
     submit = SubmitField('Enregistrer')
 
 class FactureForm(FlaskForm):
@@ -82,6 +84,18 @@ class FactureForm(FlaskForm):
     notes = TextAreaField('Notes')
     submit = SubmitField('Enregistrer la facture')
 
+class TypeVehiculeForm(FlaskForm):
+    nom = StringField('Nom', validators=[DataRequired()])
+    description = TextAreaField('Description')
+    capacite = StringField('Capacité')
+    types_demenagement = SelectMultipleField('Types de déménagement adaptés', coerce=int)
+    submit = SubmitField('Enregistrer')
+
+class TypeDemenagementForm(FlaskForm):
+    nom = StringField('Nom', validators=[DataRequired()])
+    description = TextAreaField('Description')
+    submit = SubmitField('Enregistrer')
+
 class UserForm(FlaskForm):
     nom = StringField('Nom', validators=[DataRequired()])
     prenom = StringField('Prénom', validators=[DataRequired()])
@@ -105,7 +119,8 @@ class UserForm(FlaskForm):
         ('actif', 'Actif'),
         ('inactif', 'Inactif')
     ])
-    vehicule = StringField('Véhicule')
+    vehicule = StringField('Véhicule (description)')
+    type_vehicule_id = SelectField('Type de véhicule', coerce=int, validators=[Optional()])
     submit = SubmitField('Enregistrer')
 
     def validate_password(self, field):

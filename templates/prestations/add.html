@@ -72,13 +72,30 @@
                 
                 <div class="row mb-3">
                     <div class="col-md-6">
+                        <label for="type_demenagement_id" class="form-label">{{ form.type_demenagement_id.label.text }}</label>
+                        {{ form.type_demenagement_id(class="form-control" + (" is-invalid" if form.type_demenagement_id.errors else ""), id="type_demenagement_id") }}
+                        {% for error in form.type_demenagement_id.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                        {% endfor %}
+                        <div class="form-text">Sélectionnez un type pour obtenir des suggestions de véhicules adaptés</div>
+                    </div>
+                    
+                    <div class="col-md-6">
                         <label for="type_demenagement" class="form-label">{{ form.type_demenagement.label.text }} <span class="text-danger">*</span></label>
                         {{ form.type_demenagement(class="form-control" + (" is-invalid" if form.type_demenagement.errors else ""), id="type_demenagement") }}
                         {% for error in form.type_demenagement.errors %}
                             <div class="invalid-feedback">{{ error }}</div>
                         {% endfor %}
                     </div>
-                    
+                </div>
+                
+                <div class="mb-3">
+                    <label for="vehicules_suggeres" class="form-label">{{ form.vehicules_suggeres.label.text }}</label>
+                    {{ form.vehicules_suggeres(class="form-control", id="vehicules_suggeres", rows=4) }}
+                    <div class="form-text">Les transporteurs recommandés sont mis en évidence dans la liste de sélection ci-dessus</div>
+                </div>
+                
+                <div class="row mb-3">
                     <div class="col-md-6">
                         <label for="tags" class="form-label">{{ form.tags.label.text }}</label>
                         {{ form.tags(class="form-control" + (" is-invalid" if form.tags.errors else ""), id="tags") }}
@@ -87,9 +104,7 @@
                         {% endfor %}
                         <div class="form-text">Ex: urgent, fragile, volumineux</div>
                     </div>
-                </div>
-                
-                <div class="row mb-3">
+                    
                     <div class="col-md-6">
                         <label for="societe" class="form-label">{{ form.societe.label.text }}</label>
                         {{ form.societe(class="form-control" + (" is-invalid" if form.societe.errors else ""), id="societe") }}
@@ -97,7 +112,9 @@
                             <div class="invalid-feedback">{{ error }}</div>
                         {% endfor %}
                     </div>
-                    
+                </div>
+                
+                <div class="row mb-3">
                     <div class="col-md-6">
                         <label for="montant" class="form-label">{{ form.montant.label.text }}</label>
                         {{ form.montant(class="form-control" + (" is-invalid" if form.montant.errors else ""), id="montant", type="number", step="0.01") }}
@@ -105,9 +122,7 @@
                             <div class="invalid-feedback">{{ error }}</div>
                         {% endfor %}
                     </div>
-                </div>
-                
-                <div class="row mb-3">
+                    
                     <div class="col-md-6">
                         <label for="priorite" class="form-label">{{ form.priorite.label.text }}</label>
                         {{ form.priorite(class="form-control" + (" is-invalid" if form.priorite.errors else ""), id="priorite") }}
@@ -115,7 +130,9 @@
                             <div class="invalid-feedback">{{ error }}</div>
                         {% endfor %}
                     </div>
-                    
+                </div>
+                
+                <div class="row mb-3">
                     <div class="col-md-6">
                         <label for="statut" class="form-label">{{ form.statut.label.text }}</label>
                         {{ form.statut(class="form-control" + (" is-invalid" if form.statut.errors else ""), id="statut") }}
@@ -146,4 +163,5 @@
 {% block page_scripts %}
 <script src="{{ url_for('static', filename='js/prestations.js') }}"></script>
 <script src="{{ url_for('static', filename='js/transporteur-disponibilite.js') }}"></script>
+<script src="{{ url_for('static', filename='js/vehicule-suggestions.js') }}"></script>
 {% endblock %}

@@ -9,6 +9,12 @@ prestation_transporteurs = db.Table('prestation_transporteurs',
     db.Column('user_id', db.Integer, db.ForeignKey('user.id'), primary_key=True)
 )
 
+# Association table entre types de déménagement et types de véhicules
+type_demenagement_vehicule = db.Table('type_demenagement_vehicule',
+    db.Column('type_demenagement_id', db.Integer, db.ForeignKey('type_demenagement.id'), primary_key=True),
+    db.Column('type_vehicule_id', db.Integer, db.ForeignKey('type_vehicule.id'), primary_key=True)
+)
+
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nom = db.Column(db.String(64), nullable=False)
@@ -19,10 +25,12 @@ class User(UserMixin, db.Model):
     role = db.Column(db.String(20), nullable=False, default='transporteur')
     statut = db.Column(db.String(20), nullable=False, default='actif')
     vehicule = db.Column(db.String(100), nullable=True)
+    type_vehicule_id = db.Column(db.Integer, db.ForeignKey('type_vehicule.id'), nullable=True)
     derniere_connexion = db.Column(db.DateTime, nullable=True)
     date_creation = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     
     prestations = db.relationship('Prestation', secondary=prestation_transporteurs, back_populates='transporteurs')
+    type_vehicule = db.relationship('TypeVehicule', backref='transporteurs')
     
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -66,6 +74,33 @@ class Document(db.Model):
     date_upload = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     client_id = db.Column(db.Integer, db.ForeignKey('client.id'), nullable=False)
 
+class TypeVehicule(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    nom = db.Column(db.String(100), nullable=False, unique=True)
+    description = db.Column(db.Text, nullable=True)
+    capacite = db.Column(db.String(50), nullable=True)
+    date_creation = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    
+    # Relation avec les types de déménagement
+    types_demenagement = db.relationship('TypeDemenagement', secondary=type_demenagement_vehicule, 
+                                        back_populates='types_vehicule')
+    
+    def __repr__(self):
+        return f"{self.nom}"
+
+class TypeDemenagement(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    nom = db.Column(db.String(100), nullable=False, unique=True)
+    description = db.Column(db.Text, nullable=True)
+    date_creation = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    
+    # Relation avec les types de véhicule
+    types_vehicule = db.relationship('TypeVehicule', secondary=type_demenagement_vehicule, 
+                                    back_populates='types_demenagement')
+    
+    def __repr__(self):
+        return f"{self.nom}"
+
 class Prestation(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     client_id = db.Column(db.Integer, db.ForeignKey('client.id'), nullable=False)
@@ -74,7 +109,8 @@ class Prestation(db.Model):
     date_fin = db.Column(db.DateTime, nullable=False)
     adresse_depart = db.Column(db.Text, nullable=False)
     adresse_arrivee = db.Column(db.Text, nullable=False)
-    type_demenagement = db.Column(db.String(100), nullable=False)
+    type_demenagement_id = db.Column(db.Integer, db.ForeignKey('type_demenagement.id'), nullable=True)
+    type_demenagement = db.Column(db.String(100), nullable=False)  # Conserver pour compatibilité
     tags = db.Column(db.String(200), nullable=True)
     societe = db.Column(db.String(200), nullable=True)
     montant = db.Column(db.Float, nullable=True)
@@ -87,6 +123,7 @@ class Prestation(db.Model):
     transporteurs = db.relationship('User', secondary=prestation_transporteurs, back_populates='prestations')
     commercial = db.relationship('User', foreign_keys=[commercial_id], backref='prestations_creees')
     factures = db.relationship('Facture', backref='prestation', lazy=True)
+    type_demenagement_obj = db.relationship('TypeDemenagement', backref='prestations')
     
     def __repr__(self):
         return f"Prestation {self.id} - {self.client.nom} {self.client.prenom}"
