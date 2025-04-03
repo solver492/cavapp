@@ -8,6 +8,11 @@ from models import Client, Prestation, Facture
 
 dashboard_bp = Blueprint('dashboard', __name__)
 
+@dashboard_bp.route('/test-images')
+@login_required
+def test_images():
+    return render_template('test_images.html')
+
 @dashboard_bp.route('/dashboard')
 @login_required
 def index():

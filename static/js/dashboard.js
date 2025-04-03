@@ -159,10 +159,30 @@ function initCalendar() {
         height: 'auto',
         events: [], // This would be populated with real events
         eventClick: function(info) {
-            // Show event details
-            if (info.event.url) {
+            // Rediriger vers la vue détaillée de la prestation
+            const eventId = info.event.id;
+            if (eventId) {
+                // Redirection vers la page de détails de la prestation
+                window.location.href = `/prestations/view/${eventId}`;
+                return false;
+            } else if (info.event.url) {
                 window.open(info.event.url);
                 return false;
+            }
+        },
+        // Ajouter une infobulle sur les événements
+        eventDidMount: function(info) {
+            // Vérifier si l'événement a des extendedProps
+            if (info.event.extendedProps) {
+                const title = info.event.title;
+                const statut = info.event.extendedProps.statut || 'Non défini';
+                const debut = info.event.start ? info.event.start.toLocaleDateString('fr-FR') : 'Non défini';
+                
+                // Texte de l'infobulle
+                const tooltipText = `${title} - ${statut} - ${debut}`;
+                
+                // Ajouter un attribut title pour l'infobulle natif du navigateur
+                info.el.setAttribute('title', tooltipText);
             }
         },
         loading: function(isLoading) {
@@ -178,7 +198,7 @@ function initCalendar() {
     
     calendar.render();
     
-    // In a real app, fetch events from the server
+    // Obtenir les événements du serveur
     fetchCalendarEvents().then(events => {
         calendar.removeAllEvents();
         calendar.addEventSource(events);
@@ -237,49 +257,46 @@ function fetchServiceTypeData() {
 }
 
 /**
- * Mock function to fetch calendar events
+ * Fetch calendar events from the API
  * @return {Promise} Promise resolving to array of calendar events
  */
 function fetchCalendarEvents() {
-    // Simulating API call delay
-    return new Promise(resolve => {
-        setTimeout(() => {
-            // In a real app, this would be data from the server
-            const today = new Date();
-            const in3Days = new Date(today);
-            in3Days.setDate(today.getDate() + 3);
-            
-            const in7Days = new Date(today);
-            in7Days.setDate(today.getDate() + 7);
-            
-            const in10Days = new Date(today);
-            in10Days.setDate(today.getDate() + 10);
-            
-            // Example events - in a real app, these would come from the database
-            resolve([
-                {
-                    title: 'Déménagement Dupont',
-                    start: formatDateForCalendar(in3Days),
-                    end: formatDateForCalendar(in3Days, 1),
-                    color: '#8B4513',
-                    url: '/prestations/1'
-                },
-                {
-                    title: 'Transport Martin',
-                    start: formatDateForCalendar(in7Days),
-                    color: '#DAA520',
-                    url: '/prestations/2'
-                },
-                {
-                    title: 'Déménagement commercial Leroy',
-                    start: formatDateForCalendar(in10Days),
-                    end: formatDateForCalendar(in10Days, 2),
-                    color: '#A0522D',
-                    url: '/prestations/3'
-                }
-            ]);
-        }, 500);
-    });
+    console.log('Chargement des événements du calendrier depuis l\'API...');
+    
+    // Récupération du token CSRF depuis la balise meta
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+    
+    // Configuration des headers pour la requête
+    const fetchConfig = {
+        method: 'GET',
+        headers: {
+            'X-CSRFToken': csrfToken || '',
+            'Content-Type': 'application/json'
+        },
+        credentials: 'same-origin'
+    };
+    
+    return fetch('/api/prestations/calendrier', fetchConfig)
+        .then(response => {
+            if (!response.ok) {
+                console.warn(`Erreur HTTP: ${response.status} - ${response.statusText}`);
+                throw new Error(`Erreur HTTP: ${response.status}`);
+            }
+            console.log('Réponse reçue de l\'API');
+            return response.json();
+        })
+        .then(events => {
+            console.log('Événements reçus :', events);
+            if (events.length === 0) {
+                console.warn('Aucun événement trouvé dans le calendrier.');
+            }
+            return events;
+        })
+        .catch(error => {
+            console.error('Erreur lors du chargement des événements :', error);
+            // Retourner un tableau vide en cas d'erreur pour éviter de bloquer l'application
+            return [];
+        });
 }
 
 /**

@@ -115,9 +115,17 @@ document.addEventListener('DOMContentLoaded', function() {
     // Handle address validation
     const addressInputs = document.querySelectorAll('textarea[name="adresse_depart"], textarea[name="adresse_arrivee"]');
     addressInputs.forEach(input => {
+        // Nettoyer les validations existantes lors du chargement
+        input.classList.remove('is-invalid');
+        const existingError = input.nextElementSibling;
+        if (existingError && existingError.classList.contains('invalid-feedback')) {
+            existingError.remove();
+        }
+        
         input.addEventListener('blur', function() {
             const address = this.value.trim();
-            if (address.length < 10) {
+            // Validation moins stricte (5 caractères minimum au lieu de 10)
+            if (address.length < 5 && address.length > 0) {
                 this.classList.add('is-invalid');
                 
                 // Add validation message if not exists
@@ -125,7 +133,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (!errorMessage || !errorMessage.classList.contains('invalid-feedback')) {
                     errorMessage = document.createElement('div');
                     errorMessage.className = 'invalid-feedback';
-                    errorMessage.textContent = 'Veuillez saisir une adresse complète et valide.';
+                    errorMessage.textContent = 'L\'adresse semble trop courte. Veuillez fournir plus de détails si possible.';
                     this.parentNode.insertBefore(errorMessage, this.nextSibling);
                 }
             } else {
@@ -136,6 +144,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (errorMessage && errorMessage.classList.contains('invalid-feedback')) {
                     errorMessage.remove();
                 }
+            }
+        });
+        
+        // Nettoyer les validations au focus
+        input.addEventListener('focus', function() {
+            this.classList.remove('is-invalid');
+            const errorMessage = this.nextElementSibling;
+            if (errorMessage && errorMessage.classList.contains('invalid-feedback')) {
+                errorMessage.remove();
             }
         });
     });

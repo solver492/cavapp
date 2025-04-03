@@ -219,4 +219,34 @@ class ArticleStockage(db.Model):
     date_creation = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     
     def __repr__(self):
-        return f"{self.nom} ({self.categorie or 'Non catégorisé'})"
+        return f"<ArticleStockage {self.nom}>"
+
+class Notification(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    message = db.Column(db.Text, nullable=False)
+    type = db.Column(db.String(50), nullable=False, default='info')  # info, success, warning, danger
+    date_creation = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    lu = db.Column(db.Boolean, default=False)
+    role_destinataire = db.Column(db.String(50), nullable=False)  # admin, commercial, transporteur
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)  # Si destiné à un utilisateur spécifique
+    prestation_id = db.Column(db.Integer, db.ForeignKey('prestation.id'), nullable=True)
+    stockage_id = db.Column(db.Integer, db.ForeignKey('stockage.id'), nullable=True)
+    
+    user = db.relationship('User', backref='notifications')
+    prestation = db.relationship('Prestation', backref='notifications')
+    stockage = db.relationship('Stockage', backref='notifications')
+    
+    def __repr__(self):
+        return f"<Notification {self.id}: {self.message[:30]}...>"
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'message': self.message,
+            'type': self.type,
+            'date_creation': self.date_creation.strftime('%d/%m/%Y %H:%M'),
+            'lu': self.lu,
+            'role_destinataire': self.role_destinataire,
+            'prestation_id': self.prestation_id,
+            'stockage_id': self.stockage_id
+        }

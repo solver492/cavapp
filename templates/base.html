@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{% block title %}{{ config.APP_NAME }}{% endblock %}</title>
     
     <!-- Bootstrap CSS -->
@@ -19,6 +20,7 @@
     
     <!-- Custom CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/notification-flash.css') }}">
     
     {% block extra_css %}{% endblock %}
 </head>
@@ -53,6 +55,17 @@
                                     <i class="fas fa-truck-moving"></i> Prestations
                                 </a>
                             </li>
+                            {% if current_user.role == 'transporteur' %}
+                            <li class="nav-item">
+                                <a class="nav-link {% if request.endpoint.startswith('transporteur.prestations_a_confirmer') %}active{% endif %}" href="{{ url_for('transporteur.prestations_a_confirmer') }}">
+                                    <i class="fas fa-check-circle"></i> Prestations à confirmer
+                                    {% set prestations_to_confirm = current_user.prestations|selectattr('statut', 'equalto', 'En attente')|list %}
+                                    {% if prestations_to_confirm|length > 0 %}
+                                    <span class="badge bg-danger">{{ prestations_to_confirm|length }}</span>
+                                    {% endif %}
+                                </a>
+                            </li>
+                            {% endif %}
                             <li class="nav-item">
                                 <a class="nav-link {% if request.endpoint.startswith('facture.') %}active{% endif %}" href="{{ url_for('facture.index') }}">
                                     <i class="fas fa-file-invoice-dollar"></i> Facturation
@@ -109,6 +122,51 @@
         </div>
     </main>
     
+    <!-- Carrousel de logos partenaires - Version simplifiée -->
+    <div class="partner-logos py-4 bg-light">
+        <div class="container">
+            <h4 class="text-center mb-4">Nos partenaires</h4>
+            <div id="logosCarousel" class="carousel slide" data-bs-ride="carousel">
+                <div class="carousel-inner">
+                    <div class="carousel-item active text-center">
+                        <img src="{{ url_for('static', filename='img/partenaires/logo1.png') }}" alt="Logo partenaire 1" class="partner-logo mx-auto">
+                    </div>
+                    <div class="carousel-item text-center">
+                        <img src="{{ url_for('static', filename='img/partenaires/logo2.png') }}" alt="Logo partenaire 2" class="partner-logo mx-auto">
+                    </div>
+                    <div class="carousel-item text-center">
+                        <img src="{{ url_for('static', filename='img/partenaires/logo3.png') }}" alt="Logo partenaire 3" class="partner-logo mx-auto">
+                    </div>
+                    <div class="carousel-item text-center">
+                        <img src="{{ url_for('static', filename='img/partenaires/logo4.png') }}" alt="Logo partenaire 4" class="partner-logo mx-auto">
+                    </div>
+                </div>
+                <button class="carousel-control-prev" type="button" data-bs-target="#logosCarousel" data-bs-slide="prev">
+                    <span class="carousel-control-prev-icon bg-primary rounded-circle p-2" aria-hidden="true"></span>
+                    <span class="visually-hidden">Précédent</span>
+                </button>
+                <button class="carousel-control-next" type="button" data-bs-target="#logosCarousel" data-bs-slide="next">
+                    <span class="carousel-control-next-icon bg-primary rounded-circle p-2" aria-hidden="true"></span>
+                    <span class="visually-hidden">Suivant</span>
+                </button>
+            </div>
+            <div class="d-none d-md-flex justify-content-center align-items-center mt-4">
+                <div class="partner-logo-static mx-3">
+                    <img src="{{ url_for('static', filename='img/partenaires/logo1.png') }}" alt="Logo partenaire 1" class="img-fluid">
+                </div>
+                <div class="partner-logo-static mx-3">
+                    <img src="{{ url_for('static', filename='img/partenaires/logo2.png') }}" alt="Logo partenaire 2" class="img-fluid">
+                </div>
+                <div class="partner-logo-static mx-3">
+                    <img src="{{ url_for('static', filename='img/partenaires/logo3.png') }}" alt="Logo partenaire 3" class="img-fluid">
+                </div>
+                <div class="partner-logo-static mx-3">
+                    <img src="{{ url_for('static', filename='img/partenaires/logo4.png') }}" alt="Logo partenaire 4" class="img-fluid">
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <footer>
         <div class="container">
             <p>&copy; Cavalier Déménagement. Tous droits réservés.</p>
@@ -130,6 +188,9 @@
     
     <!-- Main JavaScript -->
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    
+    <!-- Logo Carousel JavaScript -->
+    <script src="{{ url_for('static', filename='js/logo-carousel.js') }}"></script>
     
     <!-- Page-specific JavaScript -->
     {% block page_scripts %}{% endblock %}

@@ -43,20 +43,17 @@
                 </div>
                 
                 <!-- Section Véhicules suggérés et Type de déménagement (ancien) -->
+                {# Le champ type_demenagement est caché mais est toujours fonctionnel pour la compatibilité #}
+                {{ form.type_demenagement(type="hidden", id="type_demenagement") }}
+                {% for error in form.type_demenagement.errors %}
+                    <div class="d-none">{{ error }}</div>
+                {% endfor %}
+                
                 <div class="row mb-3">
-                    <div class="col-md-6">
+                    <div class="col-md-12">
                         <label for="vehicules_suggeres" class="form-label">{{ form.vehicules_suggeres.label.text }}</label>
                         {{ form.vehicules_suggeres(class="form-control", id="vehicules_suggeres", rows=4) }}
                         <div class="form-text">Véhicules recommandés pour ce type de déménagement</div>
-                    </div>
-                    
-                    <div class="col-md-6">
-                        <label for="type_demenagement" class="form-label">{{ form.type_demenagement.label.text }} <span class="text-danger">*</span></label>
-                        {{ form.type_demenagement(class="form-control" + (" is-invalid" if form.type_demenagement.errors else ""), id="type_demenagement") }}
-                        {% for error in form.type_demenagement.errors %}
-                            <div class="invalid-feedback">{{ error }}</div>
-                        {% endfor %}
-                        <div class="form-text">Type de déménagement (champ de compatibilité)</div>
                     </div>
                 </div>
                 

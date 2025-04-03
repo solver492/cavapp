@@ -1,5 +1,108 @@
 /* Main style for Cavalier Déménagement application */
 
+/* Styles pour le carrousel de logos partenaires - Version simplifiée */
+.partner-logos {
+    border-top: 1px solid #e9ecef;
+    border-bottom: 1px solid #e9ecef;
+    margin-top: 30px;
+    background: linear-gradient(to right, #f8f9fa, #ffffff, #f8f9fa);
+    padding: 30px 0;
+}
+
+.partner-logos h4 {
+    color: var(--primary-color);
+    font-weight: 600;
+    margin-bottom: 30px;
+    position: relative;
+    padding-bottom: 10px;
+}
+
+.partner-logos h4:after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80px;
+    height: 3px;
+    background-color: var(--secondary-color);
+}
+
+/* Style pour le carousel */
+#logosCarousel {
+    max-width: 800px;
+    margin: 0 auto;
+    padding-bottom: 30px;
+}
+
+.partner-logo {
+    max-height: 100px;
+    max-width: 200px;
+    margin: 0 auto;
+    display: block;
+    filter: grayscale(50%);
+    transition: all 0.3s ease;
+}
+
+.partner-logo:hover {
+    filter: grayscale(0%);
+    transform: scale(1.05);
+}
+
+/* Style pour les logos en version desktop */
+.partner-logo-static {
+    width: 150px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: white;
+    border-radius: 8px;
+    padding: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+}
+
+.partner-logo-static img {
+    max-height: 60px;
+    max-width: 130px;
+    filter: grayscale(50%);
+    transition: all 0.3s ease;
+}
+
+.partner-logo-static:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+}
+
+.partner-logo-static:hover img {
+    filter: grayscale(0%);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .partner-logo {
+        max-height: 80px;
+        max-width: 160px;
+    }
+}
+
+@media (max-width: 576px) {
+    .partner-logo {
+        max-height: 60px;
+        max-width: 120px;
+    }
+    
+    .partner-logos {
+        padding: 20px 0;
+    }
+    
+    .partner-logos h4 {
+        margin-bottom: 20px;
+        font-size: 1.2rem;
+    }
+}
+
 :root {
     --primary-color: #8B4513; /* Brown */
     --primary-light: #A0522D;

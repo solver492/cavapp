@@ -8,6 +8,15 @@ from wtforms import (
 from wtforms.validators import DataRequired, Email, Length, Optional, EqualTo
 from datetime import datetime, timedelta
 
+# Fonction de coercion personnalisu00e9e pour les select fields
+def optional_int(value):
+    if value == '' or value is None:
+        return None
+    try:
+        return int(value)
+    except (ValueError, TypeError):
+        return None
+
 class LoginForm(FlaskForm):
     username = StringField('Nom d\'utilisateur', validators=[DataRequired()])
     password = PasswordField('Mot de passe', validators=[DataRequired()])
@@ -27,13 +36,13 @@ class ClientForm(FlaskForm):
     submit = SubmitField('Enregistrer')
 
 class PrestationForm(FlaskForm):
-    client_id = SelectField('Client', coerce=int, validators=[DataRequired()])
-    transporteurs = SelectMultipleField('Transporteurs', coerce=int)
+    client_id = SelectField('Client', coerce=optional_int, validators=[DataRequired()])
+    transporteurs = SelectMultipleField('Transporteurs', coerce=optional_int)
     date_debut = DateField('Date de début', validators=[DataRequired()], default=datetime.now)
     date_fin = DateField('Date de fin', validators=[DataRequired()], default=datetime.now() + timedelta(days=1))
     adresse_depart = TextAreaField('Adresse de départ', validators=[DataRequired()])
     adresse_arrivee = TextAreaField('Adresse d\'arrivée', validators=[DataRequired()])
-    type_demenagement_id = SelectField('Type de déménagement', coerce=int, validators=[DataRequired()])
+    type_demenagement_id = SelectField('Type de déménagement', coerce=optional_int, validators=[DataRequired()])
     # Champ caché pour la compatibilité avec les anciennes données
     type_demenagement = HiddenField('Type de déménagement (ancien)')
     tags = StringField('Tags (séparés par des virgules)')
@@ -56,8 +65,8 @@ class PrestationForm(FlaskForm):
     submit = SubmitField('Enregistrer')
 
 class FactureForm(FlaskForm):
-    client_id = SelectField('Client', coerce=int, validators=[DataRequired()])
-    prestation_id = SelectField('Prestation', coerce=int, validators=[Optional()])
+    client_id = SelectField('Client', coerce=optional_int, validators=[DataRequired()])
+    prestation_id = SelectField('Prestation', coerce=optional_int, validators=[Optional()])
     numero = StringField('Numéro de facture', validators=[DataRequired()])
     date_emission = DateField('Date d\'émission', validators=[DataRequired()], default=datetime.now)
     date_echeance = DateField('Date d\'échéance', validators=[DataRequired()], default=datetime.now() + timedelta(days=30))
@@ -83,7 +92,7 @@ class TypeVehiculeForm(FlaskForm):
     nom = StringField('Nom', validators=[DataRequired()])
     description = TextAreaField('Description')
     capacite = StringField('Capacité')
-    types_demenagement = SelectMultipleField('Types de déménagement adaptés', coerce=int)
+    types_demenagement = SelectMultipleField('Types de déménagement adaptés', coerce=optional_int)
     submit = SubmitField('Enregistrer')
 
 class TypeDemenagementForm(FlaskForm):
@@ -116,7 +125,7 @@ class UserForm(FlaskForm):
     ])
     permis_conduire = StringField('Numéro de permis de conduire')
     vehicule = StringField('Véhicule (description)')
-    type_vehicule_id = SelectField('Type de véhicule', coerce=int, validators=[Optional()])
+    type_vehicule_id = SelectField('Type de véhicule', coerce=optional_int, validators=[Optional()])
     notes = TextAreaField('Notes')
     submit = SubmitField('Enregistrer')
 
@@ -137,7 +146,7 @@ class SearchPrestationForm(FlaskForm):
     submit = SubmitField('Rechercher')
 
 class SearchFactureForm(FlaskForm):
-    client_id = SelectField('Client', coerce=int)
+    client_id = SelectField('Client', coerce=optional_int)
     statut = SelectField('Statut')
     date_debut = DateField('Date début')
     date_fin = DateField('Date fin')
@@ -151,7 +160,7 @@ class SearchUserForm(FlaskForm):
     submit = SubmitField('Rechercher')
 
 class StockageForm(FlaskForm):
-    client_id = SelectField('Client', coerce=int, validators=[DataRequired()])
+    client_id = SelectField('Client', coerce=optional_int, validators=[DataRequired()])
     reference = StringField('Référence', validators=[DataRequired()])
     date_debut = DateField('Date de début', validators=[DataRequired()], default=datetime.now)
     date_fin = DateField('Date de fin (facultative)', validators=[Optional()])
@@ -191,8 +200,8 @@ class ArticleStockageForm(FlaskForm):
     submit = SubmitField('Ajouter cet article')
 
 class SearchStockageForm(FlaskForm):
-    # Utiliser coerce=int avec default=None pour accepter la valeur 0 sans erreur
-    client_id = SelectField('Client', coerce=int, validators=[Optional()])
+    # Utiliser optional_int pour gérer les valeurs vides et autres cas problématiques
+    client_id = SelectField('Client', coerce=optional_int, validators=[Optional()])
     statut = SelectField('Statut')
     date_debut = DateField('Date début', validators=[Optional()])
     date_fin = DateField('Date fin', validators=[Optional()])

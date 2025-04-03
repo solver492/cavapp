@@ -1,0 +1,32 @@
+services:
+  # Service web principal
+  - type: web
+    name: r-cavalier-app
+    env: python
+    buildCommand: ./build.sh
+    startCommand: gunicorn main:app
+    plan: free
+    healthCheckPath: /
+    autoDeploy: true
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: FLASK_APP
+        value: main.py
+      - key: PYTHON_VERSION
+        value: 3.12.0
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: ADMIN_PASSWORD
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: r-cavalier-db
+          property: connectionString
+
+  # Base de données PostgreSQL
+databases:
+  - name: r-cavalier-db
+    plan: free
+    databaseName: r_cavalier
+    user: r_cavalier_user

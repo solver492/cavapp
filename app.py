@@ -3,6 +3,7 @@ import logging
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
+from flask_wtf.csrf import CSRFProtect
 from sqlalchemy.orm import DeclarativeBase
 from werkzeug.middleware.proxy_fix import ProxyFix
 
@@ -16,6 +17,7 @@ class Base(DeclarativeBase):
 # Initialize extensions
 db = SQLAlchemy(model_class=Base)
 login_manager = LoginManager()
+csrf = CSRFProtect()
 
 def create_app():
     # Create Flask app
@@ -24,16 +26,11 @@ def create_app():
     # Load configuration
     app.config.from_object('config.Config')
     
-    # Secret key from environment variable
-    app.secret_key = os.environ.get("SESSION_SECRET", "cavalier_demenagement_secret")
-    
-    # Configure database
-    app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL", "sqlite:///cavalier.db")
+    # Ajouter les options de pool pour PostgreSQL en production
     app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
         "pool_recycle": 300,
         "pool_pre_ping": True,
     }
-    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     
     # Fix for handling proxies
     app.wsgi_app = ProxyFix(app.wsgi_app)
@@ -41,6 +38,7 @@ def create_app():
     # Initialize extensions with app
     db.init_app(app)
     login_manager.init_app(app)
+    csrf.init_app(app)
     
     # Configure login
     login_manager.login_view = 'auth.login'
@@ -61,8 +59,10 @@ def create_app():
         # Register blueprints
         from routes import (
             auth_bp, dashboard_bp, client_bp, 
-            prestation_bp, facture_bp, stockage_bp, user_bp, vehicule_bp
+            prestation_bp, facture_bp, stockage_bp, user_bp, vehicule_bp,
+            calendrier_bp
         )
+        from routes.transporteur import transporteur_bp
         
         app.register_blueprint(auth_bp)
         app.register_blueprint(dashboard_bp)
@@ -72,6 +72,8 @@ def create_app():
         app.register_blueprint(stockage_bp)
         app.register_blueprint(user_bp)
         app.register_blueprint(vehicule_bp, url_prefix='/vehicules')
+        app.register_blueprint(transporteur_bp)
+        app.register_blueprint(calendrier_bp)
         
         # Create default admin user if it doesn't exist
         from utils import create_default_admin

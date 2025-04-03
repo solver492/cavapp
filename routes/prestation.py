@@ -89,11 +89,23 @@ def add():
                                        TypeDemenagement.query.order_by(TypeDemenagement.nom).all()]
     
     if form.validate_on_submit():
-        # Récupérer le type de déménagement
-        type_dem = TypeDemenagement.query.get(form.type_demenagement_id.data)
-        if not type_dem:
-            flash('Type de déménagement invalide.', 'danger')
-            return render_template('prestations/add.html', title='Ajouter une Prestation', form=form)
+        # Récupérer le type de déménagement si l'ID est valide
+        type_dem = None
+        type_dem_id = form.type_demenagement_id.data
+        type_dem_name = ''
+
+        # Gérer le cas où type_demenagement_id est 0 (Sélectionnez un type) ou None
+        if type_dem_id is None or type_dem_id == 0:
+            # Utiliser un type générique si aucun n'est spécifié
+            type_dem_name = 'Déménagement standard'
+        else:
+            # Récupérer le type de déménagement de la base de données
+            type_dem = TypeDemenagement.query.get(type_dem_id)
+            if not type_dem:
+                flash('Type de déménagement invalide, un type standard sera utilisé.', 'warning')
+                type_dem_name = 'Déménagement standard'
+            else:
+                type_dem_name = type_dem.nom
         
         # Créer la prestation avec les données du formulaire
         prestation = Prestation(
@@ -103,14 +115,14 @@ def add():
             date_fin=form.date_fin.data,
             adresse_depart=form.adresse_depart.data,
             adresse_arrivee=form.adresse_arrivee.data,
-            type_demenagement=type_dem.nom,  # Utiliser le nom comme chaîne pour la rétrocompatibilité
+            type_demenagement=type_dem_name,  # Utiliser le nom comme chaîne pour la rétrocompatibilité
             tags=form.tags.data,
             societe=form.societe.data,
             montant=form.montant.data,
             priorite=form.priorite.data,
             statut=form.statut.data,
             observations=form.observations.data,
-            type_demenagement_id=form.type_demenagement_id.data  # Définir directement l'ID
+            type_demenagement_id=type_dem.id if type_dem else None  # Définir l'ID seulement si le type existe
         )
         
         # Add transporteurs

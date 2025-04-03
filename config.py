@@ -1,9 +1,19 @@
 import os
+from datetime import timedelta
 
 class Config:
     # Basic configuration
     DEBUG = os.environ.get('FLASK_DEBUG', 'True') == 'True'
     TESTING = False
+    SECRET_KEY = os.environ.get('SESSION_SECRET', 'dev-secret-key-change-in-production')
+    
+    # Database configuration
+    # Utilise PostgreSQL en production (Render) et SQLite en développement
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'sqlite:///cavalier.db')
+    # Si l'URL commence par 'postgres://', le remplacer par 'postgresql://' pour SQLAlchemy 2.0+
+    if SQLALCHEMY_DATABASE_URI and SQLALCHEMY_DATABASE_URI.startswith('postgres://'):
+        SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI.replace('postgres://', 'postgresql://', 1)
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
     
     # File upload settings
     UPLOAD_FOLDER = 'uploads'
@@ -22,3 +32,6 @@ class Config:
     # Invoice settings
     INVOICE_PREFIX = "FAC"
     VAT_RATE = 20.0  # Default VAT rate (%)
+    
+    # Session configuration
+    PERMANENT_SESSION_LIFETIME = timedelta(days=7)

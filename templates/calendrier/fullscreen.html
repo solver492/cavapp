@@ -1,0 +1,436 @@
+{% extends 'base.html' %}
+
+{% block title %}Calendrier des prestations - {{ config.APP_NAME }}{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.0/main.min.css" rel="stylesheet">
+<style>
+    /* Styles pour le calendrier en plein u00e9cran */
+    body {
+        overflow: hidden;
+    }
+    
+    .calendar-fullscreen {
+        height: calc(100vh - 120px);
+        margin: 0;
+        padding: 0;
+    }
+    
+    .fc {
+        height: 100%;
+    }
+    
+    .fc-header-toolbar {
+        padding: 10px;
+        margin-bottom: 0 !important;
+    }
+    
+    .fc-daygrid-day-events {
+        margin-top: 0;
+    }
+    
+    .prestation-details {
+        position: fixed;
+        top: 60px;
+        right: 0;
+        width: 0;
+        height: calc(100vh - 60px);
+        background: white;
+        z-index: 1000;
+        overflow-y: auto;
+        box-shadow: -2px 0 5px rgba(0,0,0,0.1);
+        transition: width 0.3s ease;
+    }
+    
+    .prestation-details.active {
+        width: 350px;
+    }
+    
+    .prestation-details-content {
+        padding: 15px;
+        min-width: 350px;
+    }
+    
+    /* Styles responsive pour appareils mobiles */
+    @media (max-width: 768px) {
+        .calendar-fullscreen {
+            height: calc(100vh - 160px);
+        }
+        
+        .prestation-details.active {
+            width: 100%;
+        }
+        
+        .prestation-details-content {
+            min-width: 100%;
+        }
+        
+        .fc-header-toolbar {
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .fc-toolbar-chunk {
+            margin-bottom: 10px;
+        }
+        
+        .calendar-legend {
+            flex-direction: column;
+            gap: 5px;
+        }
+    }
+    
+    .close-details {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        cursor: pointer;
+    }
+    
+    /* Styles pour les u00e9vu00e9nements selon leur statut */
+    .fc-event.event-en-attente {
+        background-color: #ffc107;
+        border-color: #e0a800;
+    }
+    
+    .fc-event.event-confirmee {
+        background-color: #17a2b8;
+        border-color: #138496;
+    }
+    
+    .fc-event.event-en-cours {
+        background-color: #007bff;
+        border-color: #0069d9;
+    }
+    
+    .fc-event.event-terminee {
+        background-color: #28a745;
+        border-color: #218838;
+    }
+    
+    .fc-event.event-annulee {
+        background-color: #dc3545;
+        border-color: #c82333;
+    }
+    
+    .fc-event.event-refusee {
+        background-color: #6c757d;
+        border-color: #5a6268;
+    }
+    
+    /* Lu00e9gende des statuts */
+    .calendar-legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        padding: 10px;
+        background: white;
+        border-top: 1px solid #dee2e6;
+    }
+    
+    .legend-item {
+        display: flex;
+        align-items: center;
+        font-size: 0.9rem;
+    }
+    
+    .legend-color {
+        width: 12px;
+        height: 12px;
+        margin-right: 5px;
+        border-radius: 2px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-title d-flex justify-content-between align-items-center">
+    <h1><i class="fas fa-calendar-alt"></i> Calendrier des prestations</h1>
+    <div>
+        <a href="{{ url_for('dashboard.index') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Retour au tableau de bord
+        </a>
+    </div>
+</div>
+
+<div class="calendar-fullscreen">
+    <div id="calendar"></div>
+</div>
+
+<div class="calendar-legend">
+    <div class="legend-item">
+        <div class="legend-color" style="background-color: #ffc107;"></div>
+        <span>En attente</span>
+    </div>
+    <div class="legend-item">
+        <div class="legend-color" style="background-color: #17a2b8;"></div>
+        <span>Confirmu00e9e</span>
+    </div>
+    <div class="legend-item">
+        <div class="legend-color" style="background-color: #007bff;"></div>
+        <span>En cours</span>
+    </div>
+    <div class="legend-item">
+        <div class="legend-color" style="background-color: #28a745;"></div>
+        <span>Terminu00e9e</span>
+    </div>
+    <div class="legend-item">
+        <div class="legend-color" style="background-color: #dc3545;"></div>
+        <span>Annulu00e9e</span>
+    </div>
+    <div class="legend-item">
+        <div class="legend-color" style="background-color: #6c757d;"></div>
+        <span>Refusu00e9e</span>
+    </div>
+</div>
+
+<!-- Panneau de du00e9tails de prestation -->
+<div class="prestation-details">
+    <div class="prestation-details-content">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="detail-title mb-0">Du00e9tails de la prestation</h5>
+            <button class="close-details btn btn-sm btn-outline-secondary" title="Fermer">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div id="prestation-details-container">
+            <!-- Les du00e9tails de la prestation seront charju00e9s ici via AJAX -->
+            <div class="text-center py-5">
+                <i class="fas fa-circle-notch fa-spin fa-2x text-primary"></i>
+                <p class="mt-2">Chargement des du00e9tails...</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.0/main.min.js"></script>
+<script src="{{ url_for('static', filename='js/lib/fullcalendar-fr.js') }}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const calendarEl = document.getElementById('calendar');
+        const prestationDetails = document.querySelector('.prestation-details');
+        const closeDetailsBtn = document.querySelector('.close-details');
+        
+        // Fonction de debug pour voir les événements reçus
+        function debugEvents(info) {
+            console.log('Événements chargés:', info.event.length, info);
+        }
+        
+        // Récupération du token CSRF pour les requêtes AJAX
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        
+        // Configuration des headers pour toutes les requêtes fetch
+        const fetchConfig = {
+            headers: {
+                'X-CSRFToken': csrfToken,
+                'Content-Type': 'application/json'
+            },
+            credentials: 'same-origin'
+        };
+        
+        const calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth',
+            height: '100%',
+            locale: 'fr',
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek'
+            },
+            navLinks: true,
+            editable: false,
+            dayMaxEvents: true,
+            // Utiliser une fonction pour charger les événements plutôt qu'une URL directe
+            events: function(info, successCallback, failureCallback) {
+                console.log('Période demandée:', info.startStr, 'à', info.endStr);
+                
+                // Récupérer les événements via fetch
+                fetch('/api/prestations/calendrier', fetchConfig)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`Erreur HTTP ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log('Données reçues:', data);
+                        successCallback(data);
+                    })
+                    .catch(error => {
+                        console.error('Erreur lors du chargement des événements:', error);
+                        failureCallback(error);
+                    });
+            },
+            eventClassNames: function(arg) {
+                let classes = [];
+                if (arg.event.extendedProps.statut) {
+                    // Conversion correcte des statuts pour les classes CSS
+                    let statut = arg.event.extendedProps.statut.toLowerCase();
+                    statut = statut.replace(/é/g, "e").replace(/è/g, "e").replace(/ê/g, "e");
+                    statut = statut.replace(/ /g, "-");
+                    classes.push('event-' + statut);
+                }
+                return classes;
+            },
+            eventDidMount: function(info) {
+                console.log('Événement monté:', info.event.title);
+            },
+            loading: function(isLoading) {
+                console.log('Chargement des événements:', isLoading ? 'en cours' : 'terminé');
+            },
+            eventClick: function(info) {
+                // Ouvrir le panneau de détails
+                prestationDetails.classList.add('active');
+                
+                // Charger les détails de la prestation
+                const prestationId = info.event.id;
+                console.log('Chargement des détails pour la prestation:', prestationId);
+                
+                fetch(`/api/prestations/${prestationId}/details`, fetchConfig)
+                    .then(response => {
+                        console.log('Réponse reçue:', response.status);
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log('Données reçues:', data);
+                        // Afficher les détails
+                        const container = document.getElementById('prestation-details-container');
+                        
+                        let html = `
+                            <div class="card border-0">
+                                <div class="card-body p-0">
+                                    <h6 class="mb-3">Client</h6>
+                                    <p class="text-primary mb-1">${data.client_nom} ${data.client_prenom}</p>
+                                    <p class="text-muted small">${data.client_telephone || 'Pas de téléphone'}</p>
+                                    
+                                    <h6 class="mb-2 mt-4">Informations</h6>
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span class="text-muted">Statut:</span>
+                                        <span class="badge ${getBadgeClass(data.statut)}">${data.statut}</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span class="text-muted">Début:</span>
+                                        <span>${data.date_debut}</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span class="text-muted">Fin:</span>
+                                        <span>${data.date_fin}</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span class="text-muted">Type:</span>
+                                        <span>${data.type_demenagement}</span>
+                                    </div>
+                                    
+                                    <h6 class="mb-2 mt-4">Adresses</h6>
+                                    <div class="mb-2">
+                                        <span class="text-muted">Départ:</span>
+                                        <p class="mb-1">${data.adresse_depart}</p>
+                                    </div>
+                                    <div class="mb-2">
+                                        <span class="text-muted">Arrivée:</span>
+                                        <p class="mb-1">${data.adresse_arrivee}</p>
+                                    </div>
+                                    
+                                    ${data.transporteurs && data.transporteurs.length > 0 ? `
+                                        <h6 class="mb-2 mt-4">Transporteurs</h6>
+                                        <ul class="list-unstyled">
+                                            ${data.transporteurs.map(t => `<li><i class="fas fa-truck-moving me-2"></i>${t.nom} ${t.prenom}</li>`).join('')}
+                                        </ul>
+                                    ` : ''}
+                                    
+                                    <div class="mt-4">
+                                        <a href="/prestations/edit/${data.id}" class="btn btn-sm btn-primary w-100">
+                                            <i class="fas fa-eye me-1"></i> Voir tous les du00e9tails
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        
+                        container.innerHTML = html;
+                        
+                        // Ajouter le bouton d'impression après avoir chargé les détails
+                        addPrintButton();
+                    })
+                    .catch(error => {
+                        console.error('Erreur lors du chargement des du00e9tails:', error);
+                        document.getElementById('prestation-details-container').innerHTML = `
+                            <div class="alert alert-danger">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                Impossible de charger les du00e9tails de la prestation.
+                                <p class="mt-2 mb-0 small">Essayez de vous reconnecter ou contactez l'administrateur.</p>
+                            </div>
+                        `;
+                    });
+            }
+        });
+        
+        calendar.render();
+        
+        // Fermer le panneau de du00e9tails
+        closeDetailsBtn.addEventListener('click', function() {
+            prestationDetails.classList.remove('active');
+        });
+        
+        // Ajouter un bouton d'impression après le chargement des détails
+        function addPrintButton() {
+            const printBtn = document.createElement('button');
+            printBtn.className = 'btn btn-outline-primary btn-sm mt-3';
+            printBtn.innerHTML = '<i class="fas fa-print"></i> Imprimer les détails';
+            printBtn.style.marginRight = '10px';
+            
+            printBtn.addEventListener('click', function() {
+                // Préparation du contenu à imprimer
+                const printContent = document.getElementById('prestation-details-container').innerHTML;
+                const originalContent = document.body.innerHTML;
+                
+                // Créer une fenêtre d'impression avec un style minimal
+                document.body.innerHTML = `
+                    <div style="padding: 20px; max-width: 800px; margin: 0 auto;">
+                        <h3 style="text-align: center; margin-bottom: 20px;">Détails de la prestation</h3>
+                        ${printContent}
+                    </div>
+                `;
+                
+                // Imprimer puis restaurer le contenu original
+                window.print();
+                document.body.innerHTML = originalContent;
+                
+                // Réinitialiser les événements après restauration
+                initEvents();
+            });
+            
+            // Ajouter le bouton au panneau de détails
+            document.querySelector('.prestation-details-content').appendChild(printBtn);
+        }
+        
+        // Fonction pour initialiser/réinitialiser les événements après modification du DOM
+        function initEvents() {
+            // Réinitialiser le calendrier
+            calendar.render();
+            
+            // Mettre à jour les références aux éléments du DOM
+            closeDetailsBtn = document.querySelector('.close-details');
+            closeDetailsBtn.addEventListener('click', function() {
+                document.querySelector('.prestation-details').classList.remove('active');
+            });
+        }
+        
+        // Fonction pour du00e9terminer la classe de badge selon le statut
+        function getBadgeClass(statut) {
+            const statusMap = {
+                'En attente': 'bg-warning',
+                'Confirmu00e9e': 'bg-info',
+                'En cours': 'bg-primary',
+                'Terminu00e9e': 'bg-success',
+                'Annulu00e9e': 'bg-danger',
+                'Refusu00e9e': 'bg-secondary'
+            };
+            
+            return statusMap[statut] || 'bg-secondary';
+        }
+    });
+</script>
+{% endblock %}

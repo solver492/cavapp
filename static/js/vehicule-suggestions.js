@@ -15,10 +15,21 @@ document.addEventListener('DOMContentLoaded', function() {
     function loadVehiculesSuggeres() {
         const typeDemenagementId = typeDemenagementSelect.value;
         
-        // Si aucun type n'est sélectionné ou si c'est le type par défaut (0), on réinitialise
-        if (!typeDemenagementId || typeDemenagementId === '' || typeDemenagementId === '0') {
-            vehiculesSuggeresTextarea.value = '';
+        // Si aucun type n'est sélectionné ou si c'est le type par défaut (0)
+        if (!typeDemenagementId || typeDemenagementId === '') {
+            vehiculesSuggeresTextarea.value = 'Veuillez sélectionner un type de déménagement pour voir les véhicules recommandés.';
             resetTransporteurHighlighting();
+            return;
+        }
+        
+        // Si c'est l'option 'Sélectionnez un type' (0), afficher un message plus spécifique
+        if (typeDemenagementId === '0') {
+            vehiculesSuggeresTextarea.value = 'Sélectionnez un type de déménagement spécifique pour voir les véhicules recommandés.';
+            resetTransporteurHighlighting();
+            // Remplir l'ancien champ type_demenagement avec une valeur vide
+            if (document.getElementById('type_demenagement')) {
+                document.getElementById('type_demenagement').value = '';
+            }
             return;
         }
         
