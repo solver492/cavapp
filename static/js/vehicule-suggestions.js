@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         // Récupérer les véhicules recommandés via l'API
-        fetch(`/api/vehicules-recommandes/${typeDemenagementId}`)
+        fetch(`/vehicules/api/vehicules-recommandes/${typeDemenagementId}`)
             .then(response => {
                 if (!response.ok) {
                     throw new Error(`Erreur HTTP: ${response.status}`);
