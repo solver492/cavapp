@@ -69,6 +69,7 @@ class Document(db.Model):
 class Prestation(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     client_id = db.Column(db.Integer, db.ForeignKey('client.id'), nullable=False)
+    commercial_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
     date_debut = db.Column(db.DateTime, nullable=False)
     date_fin = db.Column(db.DateTime, nullable=False)
     adresse_depart = db.Column(db.Text, nullable=False)
@@ -84,6 +85,7 @@ class Prestation(db.Model):
     date_creation = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     
     transporteurs = db.relationship('User', secondary=prestation_transporteurs, back_populates='prestations')
+    commercial = db.relationship('User', foreign_keys=[commercial_id], backref='prestations_creees')
     factures = db.relationship('Facture', backref='prestation', lazy=True)
     
     def __repr__(self):

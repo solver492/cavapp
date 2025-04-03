@@ -1,6 +1,7 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request
+from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_required, current_user
 from datetime import datetime
+from sqlalchemy import and_, or_
 
 from app import db
 from models import Prestation, Client, User
@@ -27,6 +28,11 @@ def index():
     if current_user.role == 'transporteur':
         prestations_query = prestations_query.filter(
             Prestation.transporteurs.any(id=current_user.id)
+        )
+    # For commercial role (non-admin), only show their own prestations
+    elif current_user.role == 'commercial' and not current_user.is_admin():
+        prestations_query = prestations_query.filter(
+            Prestation.commercial_id == current_user.id
         )
     
     # Apply search if provided
@@ -79,6 +85,7 @@ def add():
     if form.validate_on_submit():
         prestation = Prestation(
             client_id=form.client_id.data,
+            commercial_id=current_user.id,  # Associer le commercial actuel
             date_debut=form.date_debut.data,
             date_fin=form.date_fin.data,
             adresse_depart=form.adresse_depart.data,
@@ -118,6 +125,11 @@ def edit(id):
     # Check authorization
     if current_user.role == 'transporteur' and current_user not in prestation.transporteurs:
         flash('Vous n\'avez pas l\'autorisation de modifier cette prestation.', 'danger')
+        return redirect(url_for('prestation.index'))
+    
+    # Commercial can only modify their own prestations unless they are admin
+    if current_user.role == 'commercial' and not current_user.is_admin() and prestation.commercial_id != current_user.id:
+        flash('Vous ne pouvez modifier que vos propres prestations.', 'danger')
         return redirect(url_for('prestation.index'))
     
     form = PrestationForm(obj=prestation)
@@ -174,6 +186,11 @@ def toggle_archive(id):
         return redirect(url_for('prestation.index'))
     
     prestation = Prestation.query.get_or_404(id)
+    
+    # Commercial can only archive their own prestations unless they are admin
+    if current_user.role == 'commercial' and not current_user.is_admin() and prestation.commercial_id != current_user.id:
+        flash('Vous ne pouvez archiver que vos propres prestations.', 'danger')
+        return redirect(url_for('prestation.index'))
     prestation.archive = not prestation.archive
     db.session.commit()
     
@@ -200,3 +217,78 @@ def delete(id):
     
     flash('Prestation supprimée avec succès!', 'success')
     return redirect(url_for('prestation.index'))
+
+@prestation_bp.route('/prestations/check-disponibilite', methods=['POST'])
+@login_required
+def check_disponibilite():
+    """
+    Vérifie la disponibilité des transporteurs pour une période donnée
+    Retourne la liste des transporteurs disponibles
+    """
+    if not current_user.is_commercial():
+        return jsonify({'error': 'Non autorisé'}), 403
+    
+    # Récupérer les paramètres
+    date_debut = request.form.get('date_debut')
+    date_fin = request.form.get('date_fin')
+    prestation_id = request.form.get('prestation_id')
+    
+    if not date_debut or not date_fin:
+        return jsonify({'error': 'Dates requises'}), 400
+    
+    # Convertir les dates
+    try:
+        date_debut = datetime.strptime(date_debut, '%Y-%m-%d')
+        date_fin = datetime.strptime(date_fin, '%Y-%m-%d')
+    except ValueError:
+        return jsonify({'error': 'Format de date invalide'}), 400
+    
+    # Trouver les transporteurs déjà occupés pendant cette période
+    # Exclure la prestation en cours d'édition si on est en modification
+    prestations_query = Prestation.query.filter(
+        Prestation.statut != 'Annulée',
+        Prestation.archive == False,
+        or_(
+            # Prestation qui commence pendant la période demandée
+            and_(
+                Prestation.date_debut >= date_debut,
+                Prestation.date_debut <= date_fin
+            ),
+            # Prestation qui finit pendant la période demandée
+            and_(
+                Prestation.date_fin >= date_debut,
+                Prestation.date_fin <= date_fin
+            ),
+            # Prestation qui englobe la période demandée
+            and_(
+                Prestation.date_debut <= date_debut,
+                Prestation.date_fin >= date_fin
+            )
+        )
+    )
+    
+    # Si on est en mode édition, exclure la prestation actuelle
+    if prestation_id:
+        prestations_query = prestations_query.filter(Prestation.id != int(prestation_id))
+    
+    # Récupérer les transporteurs occupés
+    transporteurs_occupes = set()
+    for prestation in prestations_query.all():
+        for transporteur in prestation.transporteurs:
+            transporteurs_occupes.add(transporteur.id)
+    
+    # Récupérer tous les transporteurs actifs
+    transporteurs = User.query.filter_by(role='transporteur', statut='actif').all()
+    
+    # Préparer la réponse
+    result = []
+    for transporteur in transporteurs:
+        result.append({
+            'id': transporteur.id,
+            'nom': transporteur.nom,
+            'prenom': transporteur.prenom,
+            'vehicule': transporteur.vehicule,
+            'disponible': transporteur.id not in transporteurs_occupes
+        })
+    
+    return jsonify(result)

@@ -15,6 +15,7 @@
         <div class="card-body">
             <form method="POST">
                 {{ form.hidden_tag() }}
+                <input type="hidden" id="prestation_id" value="{{ prestation.id }}">
                 
                 <div class="row mb-3">
                     <div class="col-md-6">
@@ -145,4 +146,5 @@
 
 {% block page_scripts %}
 <script src="{{ url_for('static', filename='js/prestations.js') }}"></script>
+<script src="{{ url_for('static', filename='js/transporteur-disponibilite.js') }}"></script>
 {% endblock %}
