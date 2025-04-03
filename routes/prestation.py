@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_required, current_user
-from datetime import datetime
+from datetime import datetime, timedelta
 from sqlalchemy import and_, or_
 
 from app import db
@@ -243,6 +243,8 @@ def delete(id):
     flash('Prestation supprimée avec succès!', 'success')
     return redirect(url_for('prestation.index'))
 
+
+
 @prestation_bp.route('/prestations/check-disponibilite', methods=['POST'])
 @login_required
 def check_disponibilite():
@@ -383,3 +385,117 @@ def check_disponibilite():
             for v in vehicules_recommandes
         ]
     })
+
+@prestation_bp.route('/api/transporteurs-calendrier', methods=['GET'])
+@login_required
+def api_transporteurs_calendrier():
+    """
+    API pour le calendrier des transporteurs
+    Retourne les prestations par transporteur pour l'affichage dans FullCalendar
+    """
+    if not current_user.is_commercial() and not current_user.is_admin():
+        return jsonify({'error': 'Non autorisé'}), 403
+    
+    # Récupérer les paramètres
+    debut = request.args.get('debut', '')  # Format ISO: 2025-04-01
+    fin = request.args.get('fin', '')      # Format ISO: 2025-04-30
+    transporteur_id = request.args.get('transporteur_id', '')
+    
+    if not debut or not fin:
+        return jsonify([])  # Retourner une liste vide si pas de dates spécifiées
+    
+    # Convertir les dates ISO
+    try:
+        date_debut = datetime.fromisoformat(debut.replace('Z', '+00:00'))
+        date_fin = datetime.fromisoformat(fin.replace('Z', '+00:00'))
+    except ValueError:
+        # Essayer un autre format si celui-ci échoue
+        try:
+            date_debut = datetime.strptime(debut, '%Y-%m-%d')
+            date_fin = datetime.strptime(fin, '%Y-%m-%d')
+        except ValueError:
+            return jsonify({'error': 'Format de date invalide'}), 400
+    
+    # Récupérer les prestations pour cette période
+    prestations_query = Prestation.query.filter(
+        Prestation.statut != 'Annulée',
+        Prestation.archive == False,
+        or_(
+            # Prestation qui commence pendant la période demandée
+            and_(
+                Prestation.date_debut >= date_debut,
+                Prestation.date_debut <= date_fin
+            ),
+            # Prestation qui finit pendant la période demandée
+            and_(
+                Prestation.date_fin >= date_debut,
+                Prestation.date_fin <= date_fin
+            ),
+            # Prestation qui englobe la période demandée
+            and_(
+                Prestation.date_debut <= date_debut,
+                Prestation.date_fin >= date_fin
+            )
+        )
+    )
+    
+    # Filtrer par transporteur si spécifié
+    if transporteur_id:
+        try:
+            transporteur_id = int(transporteur_id)
+            prestations_query = prestations_query.filter(
+                Prestation.transporteurs.any(id=transporteur_id)
+            )
+        except (ValueError, TypeError):
+            pass
+    
+    # Récupérer les prestations
+    prestations = prestations_query.all()
+    
+    # Préparer les événements pour FullCalendar
+    events = []
+    
+    for prestation in prestations:
+        # Récupérer le client
+        client = Client.query.get(prestation.client_id)
+        client_nom = f"{client.nom} {client.prenom}" if client else "Client inconnu"
+        
+        # Récupérer les transporteurs assignés
+        transporteurs_noms = [f"{t.nom} {t.prenom}" for t in prestation.transporteurs]
+        
+        # Déterminer la couleur en fonction du statut
+        couleur = {
+            'En attente': '#ffc107',    # Jaune
+            'Confirmée': '#17a2b8',     # Bleu info
+            'En cours': '#007bff',      # Bleu primary
+            'Terminée': '#28a745',      # Vert
+            'Annulée': '#dc3545'        # Rouge
+        }.get(prestation.statut, '#6c757d')  # Gris par défaut
+        
+        # Créer l'événement
+        event = {
+            'id': prestation.id,
+            'title': f"{client_nom} - {prestation.type_demenagement}",
+            'start': prestation.date_debut.isoformat(),
+            'end': (prestation.date_fin + timedelta(days=1)).isoformat(),  # +1 jour pour inclure le jour de fin
+            'allDay': True,
+            'backgroundColor': couleur,
+            'borderColor': couleur,
+            'textColor': '#ffffff',
+            'extendedProps': {
+                'client': client_nom,
+                'type_demenagement': prestation.type_demenagement,
+                'adresse_depart': prestation.adresse_depart,
+                'adresse_arrivee': prestation.adresse_arrivee,
+                'statut': prestation.statut,
+                'priorite': prestation.priorite,
+                'transporteurs': transporteurs_noms,
+                'observations': prestation.observations or ''
+            },
+            'description': f"De: {prestation.adresse_depart} à: {prestation.adresse_arrivee}"
+        }
+        
+        # Ajouter à la liste des événements
+        events.append(event)
+    
+    return jsonify(events)

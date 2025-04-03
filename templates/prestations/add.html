@@ -2,6 +2,11 @@
 
 {% block title %}Ajouter une prestation - {{ config.APP_NAME }}{% endblock %}
 
+{% block head %}
+{{ super() }}
+<link href="{{ url_for('static', filename='css/lib/fullcalendar.min.css') }}" rel="stylesheet">
+{% endblock %}
+
 {% block content %}
 <div class="prestation-page">
     <div class="page-title">
@@ -16,6 +21,7 @@
             <form method="POST">
                 {{ form.hidden_tag() }}
                 
+                <!-- Section Client et Type de déménagement -->
                 <div class="row mb-3">
                     <div class="col-md-6">
                         <label for="client_id" class="form-label">{{ form.client_id.label.text }} <span class="text-danger">*</span></label>
@@ -25,17 +31,36 @@
                         {% endfor %}
                     </div>
                     
+                    <!-- Nouveau placement du type de déménagement en haut -->
                     <div class="col-md-6">
-                        <label for="transporteurs" class="form-label">{{ form.transporteurs.label.text }}</label>
-                        {{ form.transporteurs(class="form-control" + (" is-invalid" if form.transporteurs.errors else ""), id="transporteurs", size=5) }}
-                        {% for error in form.transporteurs.errors %}
+                        <label for="type_demenagement_id" class="form-label">{{ form.type_demenagement_id.label.text }}</label>
+                        {{ form.type_demenagement_id(class="form-control" + (" is-invalid" if form.type_demenagement_id.errors else ""), id="type_demenagement_id") }}
+                        {% for error in form.type_demenagement_id.errors %}
                             <div class="invalid-feedback">{{ error }}</div>
                         {% endfor %}
-                        <div class="form-text">Maintenez Ctrl pour sélectionner plusieurs transporteurs</div>
-                        <div class="selected-transporteurs-count mt-1 small text-muted"></div>
+                        <div class="form-text">Sélectionnez d'abord le type pour voir les véhicules adaptés</div>
                     </div>
                 </div>
                 
+                <!-- Section Véhicules suggérés et Type de déménagement (ancien) -->
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="vehicules_suggeres" class="form-label">{{ form.vehicules_suggeres.label.text }}</label>
+                        {{ form.vehicules_suggeres(class="form-control", id="vehicules_suggeres", rows=4) }}
+                        <div class="form-text">Véhicules recommandés pour ce type de déménagement</div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label for="type_demenagement" class="form-label">{{ form.type_demenagement.label.text }} <span class="text-danger">*</span></label>
+                        {{ form.type_demenagement(class="form-control" + (" is-invalid" if form.type_demenagement.errors else ""), id="type_demenagement") }}
+                        {% for error in form.type_demenagement.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                        {% endfor %}
+                        <div class="form-text">Type de déménagement (champ de compatibilité)</div>
+                    </div>
+                </div>
+                
+                <!-- Section Dates -->
                 <div class="row mb-3">
                     <div class="col-md-6">
                         <label for="date_debut" class="form-label">{{ form.date_debut.label.text }} <span class="text-danger">*</span></label>
@@ -54,47 +79,43 @@
                     </div>
                 </div>
                 
-                <div class="mb-3">
-                    <label for="adresse_depart" class="form-label">{{ form.adresse_depart.label.text }} <span class="text-danger">*</span></label>
-                    {{ form.adresse_depart(class="form-control" + (" is-invalid" if form.adresse_depart.errors else ""), id="adresse_depart", rows=3) }}
-                    {% for error in form.adresse_depart.errors %}
-                        <div class="invalid-feedback">{{ error }}</div>
-                    {% endfor %}
-                </div>
-                
-                <div class="mb-3">
-                    <label for="adresse_arrivee" class="form-label">{{ form.adresse_arrivee.label.text }} <span class="text-danger">*</span></label>
-                    {{ form.adresse_arrivee(class="form-control" + (" is-invalid" if form.adresse_arrivee.errors else ""), id="adresse_arrivee", rows=3) }}
-                    {% for error in form.adresse_arrivee.errors %}
-                        <div class="invalid-feedback">{{ error }}</div>
-                    {% endfor %}
-                </div>
-                
+                <!-- Section Transporteurs -->
                 <div class="row mb-3">
-                    <div class="col-md-6">
-                        <label for="type_demenagement_id" class="form-label">{{ form.type_demenagement_id.label.text }}</label>
-                        {{ form.type_demenagement_id(class="form-control" + (" is-invalid" if form.type_demenagement_id.errors else ""), id="type_demenagement_id") }}
-                        {% for error in form.type_demenagement_id.errors %}
+                    <div class="col-md-12 form-group transporteurs">
+                        <button type="button" id="show-calendar-btn" class="btn btn-primary mb-2">
+                            <i class="fas fa-calendar-alt mr-2"></i> Afficher le calendrier des disponibilités
+                        </button>
+                        
+                        <label for="transporteurs" class="form-label">{{ form.transporteurs.label.text }}</label>
+                        {{ form.transporteurs(class="form-control" + (" is-invalid" if form.transporteurs.errors else ""), id="transporteurs", size=5) }}
+                        {% for error in form.transporteurs.errors %}
                             <div class="invalid-feedback">{{ error }}</div>
                         {% endfor %}
-                        <div class="form-text">Sélectionnez un type pour obtenir des suggestions de véhicules adaptés</div>
+                        <div class="form-text">Maintenez Ctrl pour sélectionner plusieurs transporteurs. Les transporteurs recommandés avec véhicules adaptés sont mis en évidence.</div>
+                        <div class="selected-transporteurs-count mt-1 small text-muted"></div>
+                    </div>
+                </div>
+                
+                <!-- Section Adresses -->
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="adresse_depart" class="form-label">{{ form.adresse_depart.label.text }} <span class="text-danger">*</span></label>
+                        {{ form.adresse_depart(class="form-control" + (" is-invalid" if form.adresse_depart.errors else ""), id="adresse_depart", rows=3) }}
+                        {% for error in form.adresse_depart.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                        {% endfor %}
                     </div>
                     
                     <div class="col-md-6">
-                        <label for="type_demenagement" class="form-label">{{ form.type_demenagement.label.text }} <span class="text-danger">*</span></label>
-                        {{ form.type_demenagement(class="form-control" + (" is-invalid" if form.type_demenagement.errors else ""), id="type_demenagement") }}
-                        {% for error in form.type_demenagement.errors %}
+                        <label for="adresse_arrivee" class="form-label">{{ form.adresse_arrivee.label.text }} <span class="text-danger">*</span></label>
+                        {{ form.adresse_arrivee(class="form-control" + (" is-invalid" if form.adresse_arrivee.errors else ""), id="adresse_arrivee", rows=3) }}
+                        {% for error in form.adresse_arrivee.errors %}
                             <div class="invalid-feedback">{{ error }}</div>
                         {% endfor %}
                     </div>
                 </div>
                 
-                <div class="mb-3">
-                    <label for="vehicules_suggeres" class="form-label">{{ form.vehicules_suggeres.label.text }}</label>
-                    {{ form.vehicules_suggeres(class="form-control", id="vehicules_suggeres", rows=4) }}
-                    <div class="form-text">Les transporteurs recommandés sont mis en évidence dans la liste de sélection ci-dessus</div>
-                </div>
-                
+                <!-- Informations supplémentaires -->
                 <div class="row mb-3">
                     <div class="col-md-6">
                         <label for="tags" class="form-label">{{ form.tags.label.text }}</label>
@@ -158,10 +179,40 @@
         </div>
     </div>
 </div>
+
+<!-- Modal pour le calendrier -->
+<div class="modal fade" id="calendar-modal" tabindex="-1" role="dialog" aria-labelledby="calendar-modal-title" aria-hidden="true">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="calendar-modal-title">Calendrier des disponibilités</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Fermer">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <select id="transporteur-filter" class="form-control">
+                            <option value="">Tous les transporteurs</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="transporteur-calendrier" style="height: 600px;"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Fermer</button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block page_scripts %}
+<script src="{{ url_for('static', filename='js/lib/fullcalendar.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/lib/fullcalendar-fr.js') }}"></script>
 <script src="{{ url_for('static', filename='js/prestations.js') }}"></script>
 <script src="{{ url_for('static', filename='js/transporteur-disponibilite.js') }}"></script>
 <script src="{{ url_for('static', filename='js/vehicule-suggestions.js') }}"></script>
+<script src="{{ url_for('static', filename='js/transporteur-calendrier.js') }}"></script>
 {% endblock %}
