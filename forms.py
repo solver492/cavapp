@@ -191,10 +191,11 @@ class ArticleStockageForm(FlaskForm):
     submit = SubmitField('Ajouter cet article')
 
 class SearchStockageForm(FlaskForm):
-    client_id = SelectField('Client', coerce=int)
+    # Utiliser coerce=int avec default=None pour accepter la valeur 0 sans erreur
+    client_id = SelectField('Client', coerce=int, validators=[Optional()])
     statut = SelectField('Statut')
-    date_debut = DateField('Date début')
-    date_fin = DateField('Date fin')
+    date_debut = DateField('Date début', validators=[Optional()])
+    date_fin = DateField('Date fin', validators=[Optional()])
     reference = StringField('Référence')
     archives = BooleanField('Afficher les stockages archivés')
     submit = SubmitField('Filtrer')

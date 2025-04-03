@@ -23,7 +23,8 @@ def index():
     # Initialiser les choix du formulaire
     clients = Client.query.filter_by(archive=False).order_by(Client.nom).all()
     form.client_id.choices = [(c.id, f"{c.nom} {c.prenom}") for c in clients]
-    form.client_id.choices.insert(0, ('', 'Tous les clients'))
+    # Utiliser 0 au lieu d'une chaîne vide pour éviter l'erreur de conversion
+    form.client_id.choices.insert(0, (0, 'Tous les clients'))
     
     form.statut.choices = [
         ('Actif', 'Actif'),

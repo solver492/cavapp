@@ -365,7 +365,7 @@ def check_disponibilite():
                         'id': transporteur.id,
                         'nom': transporteur.nom,
                         'prenom': transporteur.prenom,
-                        'vehicule': transporteur.vehicule,
+                        'vehicule': transporteur.vehicule or 'Non spécifié',
                         'type_vehicule': transporteur.type_vehicule.nom if transporteur.type_vehicule else 'Non spécifié',
                         'disponible_le': prochaine_disponibilite
                     })
@@ -375,7 +375,7 @@ def check_disponibilite():
             'id': transporteur.id,
             'nom': transporteur.nom,
             'prenom': transporteur.prenom,
-            'vehicule': transporteur.vehicule,
+            'vehicule': transporteur.vehicule or 'Non spécifié',
             'vehicule_adapte': vehicule_adapte,
             'type_vehicule': transporteur.type_vehicule.nom if transporteur.type_vehicule else 'Non spécifié',
             'disponible': disponible,
