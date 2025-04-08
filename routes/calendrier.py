@@ -1,9 +1,9 @@
 from flask import Blueprint, render_template, jsonify, request
 from flask_login import login_required, current_user
-from datetime import datetime
+from datetime import datetime, timedelta
 
-from app import db
-from models import Prestation
+from extensions import db
+from models import Prestation, Stockage
 
 calendrier_bp = Blueprint('calendrier', __name__)
 
@@ -20,125 +20,186 @@ def fullscreen():
 def api_prestations_calendrier():
     import logging
     logging.basicConfig(level=logging.INFO)
-    logging.info(f"=== API CALENDRIER === Récupération des prestations pour le calendrier, utilisateur: {current_user.username}, rôle: {current_user.role}")
+    logging.info(f"=== API CALENDRIER === Récupération des événements pour le calendrier, utilisateur: {current_user.username}, rôle: {current_user.role}")
     
-    # Initialiser la liste des prestations
-    prestations = []
+    # Initialiser la liste des événements
+    events = []
     
+    # 1. Récupérer les prestations
     try:
         # Récupérer toutes les prestations non archivées
         prestations_query = Prestation.query
-        logging.info(f"Requête de base créée")
-        
-        # Affichage des colonnes disponibles pour débogage
-        try:
-            first_prestation = Prestation.query.first()
-            if first_prestation:
-                logging.info(f"Exemple de prestation: ID={first_prestation.id}, statut={first_prestation.statut}")
-                logging.info(f"Date début: {first_prestation.date_debut}, Date fin: {first_prestation.date_fin}")
-            else:
-                logging.warning("Aucune prestation trouvée dans la base de données")
-        except Exception as e:
-            logging.error(f"Erreur lors de l'inspection des colonnes: {str(e)}")
+        logging.info(f"Requête de prestations créée")
         
         # Filtrer selon le rôle
         if current_user.role == 'transporteur':
-            logging.info(f"Filtrage pour transporteur {current_user.id}")
+            logging.info(f"Filtrage des prestations pour transporteur {current_user.id}")
             prestations_query = prestations_query.filter(
                 Prestation.transporteurs.any(id=current_user.id)
             )
         
-        # Récupérer toutes les prestations (même sans filtre archive pour déboguer)
+        # Récupérer toutes les prestations
         prestations = prestations_query.all()
         logging.info(f"Nombre de prestations trouvées: {len(prestations)}")
         
-        # Si aucune prestation n'est trouvée, créer quelques exemples pour le débogage
-        if len(prestations) == 0:
-            logging.warning("Aucune prestation n'a été trouvée, vérifiez les filtres ou la base de données")
+        # Convertir les prestations en événements
+        for prestation in prestations:
+            try:
+                # Couleur en fonction du statut
+                color = {
+                    'En attente': '#ffc107',
+                    'Confirmée': '#17a2b8',
+                    'En cours': '#007bff',
+                    'Terminée': '#28a745',
+                    'Annulée': '#dc3545',
+                    'Refusée': '#6c757d'
+                }.get(prestation.statut, '#6c757d')
+                
+                client_title = 'Sans client'
+                if prestation.client:
+                    client_title = f'{prestation.client.nom} {prestation.client.prenom}'
+                
+                # Convertir les dates en string ISO pour FullCalendar
+                try:
+                    start_date = prestation.date_debut.isoformat()
+                    end_date = prestation.date_fin.isoformat()
+                except Exception as e:
+                    logging.error(f"Erreur lors de la conversion des dates de prestation: {str(e)}")
+                    start_date = "2025-04-03T00:00:00"  # Date par défaut en cas d'erreur
+                    end_date = "2025-04-03T23:59:59"
+                
+                event = {
+                    'id': prestation.id,
+                    'title': f'{prestation.type_demenagement} - {client_title}',
+                    'start': start_date,
+                    'end': end_date,
+                    'allDay': True,
+                    'backgroundColor': color,
+                    'borderColor': color,
+                    'textColor': '#fff' if prestation.statut not in ['En attente'] else '#000',
+                    'extendedProps': {
+                        'type': 'prestation',
+                        'statut': prestation.statut,
+                        'client': client_title,
+                        'adresse_depart': prestation.adresse_depart,
+                        'adresse_arrivee': prestation.adresse_arrivee,
+                        'type_demenagement': prestation.type_demenagement,
+                        'observations': prestation.observations or ''
+                    }
+                }
+                
+                events.append(event)
+                logging.info(f"Prestation {prestation.id} ajoutée au calendrier")
+            except Exception as e:
+                logging.error(f"Erreur lors de la conversion de la prestation {prestation.id}: {str(e)}")
     except Exception as e:
         logging.error(f"Erreur lors de la récupération des prestations: {str(e)}")
     
-    # Formater les prestations pour le calendrier
-    events = []
-    logging.info("Début de la conversion des prestations en événements pour le calendrier")
-    
-    for prestation in prestations:
-        try:
-            logging.info(f"Traitement de la prestation {prestation.id}")
-            # Couleur en fonction du statut
-            color = {
-                'En attente': '#ffc107',
-                'Confirmée': '#17a2b8',
-                'En cours': '#007bff',
-                'Terminée': '#28a745',
-                'Annulée': '#dc3545',
-                'Refusée': '#6c757d'
-            }.get(prestation.statut, '#6c757d')
-            
-            client_title = 'Sans client'
-            if prestation.client:
-                client_title = f'{prestation.client.nom} {prestation.client.prenom}'
-                logging.info(f"Client de la prestation: {client_title}")
-            
-            # Convertir les dates en string ISO pour FullCalendar
+    # 2. Récupérer les stockages
+    try:
+        # Récupérer tous les stockages actifs
+        stockages_query = Stockage.query
+        logging.info(f"Requête de stockages créée")
+        
+        # Filtrer selon le rôle si nécessaire
+        if current_user.role == 'client':
+            logging.info(f"Filtrage des stockages pour client {current_user.id}")
+            stockages_query = stockages_query.filter(Stockage.client_id == current_user.id)
+        
+        # Récupérer tous les stockages
+        stockages = stockages_query.all()
+        logging.info(f"Nombre de stockages trouvés: {len(stockages)}")
+        
+        # Convertir les stockages en événements
+        for stockage in stockages:
             try:
-                start_date = prestation.date_debut.isoformat()
-                end_date = prestation.date_fin.isoformat()
-                logging.info(f"Dates converties: {start_date} - {end_date}")
+                # Couleur pour les stockages - vert plus clair
+                color = '#4caf50'  # Vert
+                
+                client_title = 'Sans client'
+                if hasattr(stockage, 'client') and stockage.client:
+                    client_title = f'{stockage.client.nom} {stockage.client.prenom}'
+                
+                # Déterminer le titre du stockage
+                stockage_title = f'Stockage'
+                if hasattr(stockage, 'nom') and stockage.nom:
+                    stockage_title = f'Stockage - {stockage.nom}'
+                
+                # Convertir les dates en string ISO pour FullCalendar
+                try:
+                    start_date = stockage.date_debut.isoformat() if hasattr(stockage, 'date_debut') and stockage.date_debut else datetime.now().isoformat()
+                    end_date = stockage.date_fin.isoformat() if hasattr(stockage, 'date_fin') and stockage.date_fin else (datetime.now() + timedelta(days=30)).isoformat()
+                except Exception as e:
+                    logging.error(f"Erreur lors de la conversion des dates de stockage: {str(e)}")
+                    start_date = datetime.now().isoformat()
+                    end_date = (datetime.now() + timedelta(days=30)).isoformat()
+                
+                event = {
+                    'id': f'stock-{stockage.id}',  # Préfixe pour différencier des prestations
+                    'title': f'{stockage_title} - {client_title}',
+                    'start': start_date,
+                    'end': end_date,
+                    'allDay': True,
+                    'backgroundColor': color,
+                    'borderColor': color,
+                    'textColor': '#fff',
+                    'extendedProps': {
+                        'type': 'stockage',
+                        'client': client_title
+                    }
+                }
+                
+                # Ajouter d'autres propriétés si disponibles
+                if hasattr(stockage, 'adresse'):
+                    event['extendedProps']['adresse'] = stockage.adresse
+                if hasattr(stockage, 'observations'):
+                    event['extendedProps']['observations'] = stockage.observations or ''
+                if hasattr(stockage, 'statut'):
+                    event['extendedProps']['statut'] = stockage.statut
+                
+                events.append(event)
+                logging.info(f"Stockage {stockage.id} ajouté au calendrier")
             except Exception as e:
-                logging.error(f"Erreur lors de la conversion des dates: {str(e)}")
-                start_date = "2025-04-03T00:00:00"  # Date par défaut en cas d'erreur
-                end_date = "2025-04-03T23:59:59"
-            
-            event = {
-                'id': prestation.id,
-                'title': f'{prestation.type_demenagement} - {client_title}',
-                'start': start_date,
-                'end': end_date,
-                'extendedProps': {
-                    'statut': prestation.statut,
-                    'adresse_depart': prestation.adresse_depart,
-                    'adresse_arrivee': prestation.adresse_arrivee,
-                    'type_demenagement': prestation.type_demenagement
-                },
-                'color': color
-            }
-            events.append(event)
-            logging.info(f"Evénement ajouté pour la prestation {prestation.id}: {event}")
-        except Exception as e:
-            logging.error(f"Erreur lors du traitement de la prestation: {str(e)}")
+                logging.error(f"Erreur lors de la conversion du stockage {stockage.id}: {str(e)}")
+    except Exception as e:
+        logging.error(f"Erreur lors de la récupération des stockages: {str(e)}")
+    
+    # Cette section est maintenant gérée dans le bloc ci-dessus
+    logging.info(f"Nombre total d'événements générés: {len(events)}")
     
     logging.info(f"Nombre total d'événements générés: {len(events)}")
-    logging.info(f"Events renvoyés: {events}")
     
     # Si aucun événement n'a été trouvé, ajouter des événements de test
-    # Cette partie est temporaire pour vérifier que le calendrier fonctionne correctement
     if len(events) == 0:
-        logging.warning("Aucun événement n'a été trouvé, ajout d'événements de test pour débogage")
+        logging.warning("Aucun événement n'a été trouvé, ajout d'événements de test")
         
-        from datetime import datetime, timedelta
-        today = datetime.now()
+        # Date pour aujourd'hui et demain
+        today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        tomorrow = today + timedelta(days=1)
         
-        # Événement pour aujourd'hui
+        # Événement de test pour déménagement (aujourd'hui)
         events.append({
-            'id': 'test-999',  # Utiliser un préfixe "test-" pour identifier les événements de test
+            'id': 'test-999',
             'title': 'Déménagement Test',
             'start': today.isoformat(),
             'end': (today + timedelta(hours=4)).isoformat(),
             'extendedProps': {
-                'test': True,  # Marquer comme événement de test
+                'test': True,
+                'type': 'prestation',
                 'statut': 'En attente',
                 'adresse_depart': '123 Rue de Test, Paris',
                 'adresse_arrivee': '456 Avenue de Test, Paris',
-                'type_demenagement': 'Appartement'
+                'type_demenagement': 'Appartement',
+                'client': 'Client Test'
             },
-            'color': '#ffc107'
+            'backgroundColor': '#ffc107',
+            'borderColor': '#ffc107',
+            'textColor': '#000'
         })
         
-        # Événement pour demain
-        tomorrow = today + timedelta(days=1)
+        # Événement de test pour transport (demain)
         events.append({
-            'id': 'test-998',  # Utiliser un préfixe "test-" pour identifier les événements de test
+            'id': 'test-998',
             'title': 'Transport Test',
             'start': tomorrow.isoformat(),
             'end': (tomorrow + timedelta(hours=2)).isoformat(),

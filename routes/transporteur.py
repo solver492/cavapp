@@ -3,8 +3,8 @@ from flask_login import login_required, current_user
 from datetime import datetime
 import json
 
-from app import db
-from models import Prestation, Client, User
+from extensions import db
+from models import Prestation, Client, User, prestation_transporteurs
 
 transporteur_bp = Blueprint('transporteur', __name__)
 
@@ -149,3 +149,106 @@ def update_status(id):
     
     # Rediriger vers la page de du00e9tails de la prestation
     return redirect(url_for('transporteur.view_prestation', id=prestation.id))
+
+
+@transporteur_bp.route('/prestation/response', methods=['POST'])
+@login_required
+def transporteur_prestation_response():
+    """
+    Gère les réponses des transporteurs aux prestations qui leur sont assignées
+    (acceptation, refus, documentation)
+    """
+    # Vérifier que l'utilisateur est un transporteur
+    if current_user.role != 'transporteur':
+        flash('Vous n\'êtes pas autorisé à effectuer cette action.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    try:
+        # Récupérer les données du formulaire
+        data = request.get_json()
+        if not data:
+            return jsonify({
+                'success': False,
+                'message': 'Aucune donnée reçue'
+            }), 400
+        
+        prestation_id = data.get('prestation_id')
+        status = data.get('status')  # 'accepte', 'refuse', 'documente'
+        raison_refus = data.get('raison_refus', '')
+        
+        # Validation des données
+        if not prestation_id or not status:
+            return jsonify({
+                'success': False,
+                'message': 'ID de prestation et statut requis'
+            }), 400
+        
+        # Récupérer la prestation
+        prestation = Prestation.query.get(prestation_id)
+        
+        if not prestation:
+            return jsonify({
+                'success': False,
+                'message': 'Prestation non trouvée'
+            }), 404
+        
+        # Vérifier que le transporteur est bien assigné à cette prestation
+        if current_user not in prestation.transporteurs:
+            return jsonify({
+                'success': False,
+                'message': 'Vous n\'êtes pas assigné à cette prestation'
+            }), 403
+        
+        # Mettre à jour le statut de la prestation pour ce transporteur
+        # Nous allons utiliser une table d'association avec des attributs supplémentaires
+        association = db.session.query(prestation_transporteurs).filter_by(
+            prestation_id=prestation.id,
+            transporteur_id=current_user.id
+        ).first()
+        
+        if not association:
+            # Créer l'association si elle n'existe pas
+            association = prestation_transporteurs.insert().values(
+                prestation_id=prestation.id,
+                transporteur_id=current_user.id,
+                status=status,
+                raison_refus=raison_refus if status == 'refuse' else '',
+                date_reponse=datetime.now()
+            )
+            db.session.execute(association)
+        else:
+            # Mettre à jour l'association existante
+            association.status = status
+            association.raison_refus = raison_refus if status == 'refuse' else ''
+            association.date_reponse = datetime.now()
+        
+        # Si le transporteur refuse, mettre à jour le statut de la prestation
+        if status == 'refuse':
+            # Notifier l'administrateur et le commercial
+            # TODO: Implémenter le système de notification
+            pass
+        
+        # Enregistrer les modifications
+        db.session.commit()
+        
+        # Créer un message de confirmation
+        message = ''
+        if status == 'accepte':
+            message = 'Vous avez accepté la prestation avec succès.'
+        elif status == 'refuse':
+            message = 'Vous avez refusé la prestation. Merci pour votre réponse.'
+        elif status == 'documente':
+            message = 'Vous avez documenté la prestation avec succès.'
+        
+        return jsonify({
+            'success': True,
+            'message': message
+        })
+    
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Erreur lors de la réponse à la prestation: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': f"Une erreur est survenue: {str(e)}"
+        }), 500

@@ -6,7 +6,7 @@ import os
 import json
 from decimal import Decimal
 
-from app import db
+from extensions import db
 from models import Stockage, Client, ArticleStockage, StockageArticle, Facture
 from forms import StockageForm, ArticleStockageForm, SearchStockageForm
 from auth import role_required
@@ -81,7 +81,36 @@ def index():
 @role_required('commercial', 'admin', 'super_admin')
 def add():
     """Ajouter un nouveau stockage"""
+    # Récupérer les paramètres de l'URL (utilisés lors de la création depuis le calendrier)
+    planning_name = request.args.get('name', '')
+    planning_start_date = request.args.get('start_date', '')
+    planning_end_date = request.args.get('end_date', '')
+    planning_tags = request.args.get('tags', '')
+    
     form = StockageForm()
+    
+    # Si le formulaire n'est pas encore soumis (méthode GET), pré-remplir avec les paramètres de l'URL
+    if request.method == 'GET':
+        # Mettre le nom du planning dans les observations
+        if planning_name:
+            form.observations.data = f"Planning: {planning_name}\n\n{form.observations.data or ''}"
+        
+        # Convertir et définir les dates si elles sont fournies
+        if planning_start_date:
+            try:
+                # Convertir la date au format attendu
+                start_date = datetime.strptime(planning_start_date, '%Y-%m-%d')
+                form.date_debut.data = start_date
+            except ValueError:
+                pass
+        
+        if planning_end_date:
+            try:
+                # Convertir la date au format attendu
+                end_date = datetime.strptime(planning_end_date, '%Y-%m-%d')
+                form.date_fin.data = end_date
+            except ValueError:
+                pass
     
     # Récupérer les clients actifs pour le formulaire
     clients = Client.query.filter_by(archive=False).order_by(Client.nom).all()

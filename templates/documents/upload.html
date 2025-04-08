@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block title %}Ajouter un document{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12 col-md-8 offset-md-2">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Ajouter un nouveau document</h6>
+                    <div>
+                        <a href="{{ url_for('document.list_documents') }}" class="btn btn-secondary btn-sm">
+                            <i class="fas fa-arrow-left"></i> Retour à la liste
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% include 'components/flash_messages.html' %}
+                    
+                    <form method="post" action="{{ url_for('document.upload_document') }}" enctype="multipart/form-data">
+                        {{ form.csrf_token }}
+                        
+                        <div class="form-group">
+                            {{ form.client_id.label(class="form-control-label") }} <span class="text-danger">*</span>
+                            {{ form.client_id(class="form-control") }}
+                            {% if form.client_id.errors %}
+                            <div class="text-danger">
+                                {% for error in form.client_id.errors %}
+                                <span>{{ error }}</span>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="form-group">
+                            {{ form.nom.label(class="form-control-label") }} <span class="text-danger">*</span>
+                            {{ form.nom(class="form-control") }}
+                            {% if form.nom.errors %}
+                            <div class="text-danger">
+                                {% for error in form.nom.errors %}
+                                <span>{{ error }}</span>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="form-group">
+                            {{ form.fichier.label(class="form-control-label") }} <span class="text-danger">*</span>
+                            {{ form.fichier(class="form-control-file") }}
+                            {% if form.fichier.errors %}
+                            <div class="text-danger">
+                                {% for error in form.fichier.errors %}
+                                <span>{{ error }}</span>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                            <small class="form-text text-muted">Formats acceptés: PDF, images, documents Office, texte</small>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    {{ form.type.label(class="form-control-label") }}
+                                    {{ form.type(class="form-control") }}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    {{ form.categorie.label(class="form-control-label") }}
+                                    {{ form.categorie(class="form-control") }}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            {{ form.tags.label(class="form-control-label") }}
+                            {{ form.tags(class="form-control", placeholder="Exemple: important, facture, 2023") }}
+                            <small class="form-text text-muted">Séparez les tags par des virgules</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            {{ form.notes.label(class="form-control-label") }}
+                            {{ form.notes(class="form-control", rows=5) }}
+                            <small class="form-text text-muted">Vous pouvez ajouter des notes détaillées sur ce document</small>
+                        </div>
+                        
+                        <div class="form-group d-none">
+                            {{ form.statut.label(class="form-control-label") }}
+                            {{ form.statut(class="form-control") }}
+                        </div>
+                        
+                        <div class="form-group text-center mt-4">
+                            <a href="{{ url_for('document.list_documents') }}" class="btn btn-secondary">
+                                Annuler
+                            </a>
+                            {{ form.submit(class="btn btn-primary") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $(document).ready(function() {
+        // Mise à jour automatique du nom du document en fonction du nom de fichier
+        $('#fichier').change(function() {
+            var fileName = $(this).val().split('\\').pop();
+            if (fileName && !$('#nom').val()) {
+                // Enlever l'extension du fichier pour le nom
+                var fileNameWithoutExt = fileName.replace(/\.[^/.]+$/, "");
+                $('#nom').val(fileNameWithoutExt);
+            }
+        });
+    });
+</script>
+{% endblock %}

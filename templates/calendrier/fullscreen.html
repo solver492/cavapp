@@ -3,6 +3,8 @@
 {% block title %}Calendrier des prestations - {{ config.APP_NAME }}{% endblock %}
 
 {% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/calendar-fix.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/planning-button.css') }}">
 <style>
     /* Styles pour le calendrier en plein écran */
     body {
@@ -369,9 +371,64 @@
         <div id="prestation-details-container"></div>
     </div>
 </div>
+<!-- Modal pour l'ajout de planning -->
+<div class="modal fade" id="planning-modal" tabindex="-1" aria-labelledby="planningModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="planningModalLabel">Nouveau Planning</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+            </div>
+            <div class="modal-body">
+                <form id="planning-form">
+                    <div class="mb-3">
+                        <label for="planning-type" class="form-label">Type de planning</label>
+                        <select class="form-select" id="planning-type" name="planning-type" required>
+                            <option value="" selected disabled>Sélectionner un type</option>
+                            <option value="demenagement">Déménagement</option>
+                            <option value="stockage">Stockage</option>
+                        </select>
+                        <div class="form-text text-muted mt-2" id="type-description">
+                            Veuillez sélectionner un type de planning pour continuer.
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="planning-name" class="form-label">Nom du planning</label>
+                        <input type="text" class="form-control" id="planning-name" name="planning-name" placeholder="Ex: Déménagement client Dupont" required>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="start-date" class="form-label">Date de début</label>
+                            <input type="date" class="form-control" id="start-date" name="start-date" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="end-date" class="form-label">Date de fin</label>
+                            <input type="date" class="form-control" id="end-date" name="end-date" required>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="planning-tags" class="form-label">Tags (facultatif)</label>
+                        <input type="text" class="form-control" id="planning-tags" name="planning-tags" placeholder="Ex: urgent, spécial, équipe A">
+                        <div class="form-text text-muted">Séparez les tags par des virgules</div>
+                    </div>
+                    
+                    <div class="modal-footer px-0 pb-0">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                        <button type="submit" class="btn btn-primary">Continuer</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block page_scripts %}
+<!-- Solution radicale pour les problèmes du calendrier (v3) -->
+<script src="{{ url_for('static', filename='js/calendar-fix-v3.js') }}"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         console.log("Initialisation du calendrier...");
@@ -400,7 +457,7 @@
         
         // Initialisation du calendrier
         console.log("Configuration du calendrier...");
-        const calendar = new FullCalendar.Calendar(calendarEl, {
+        window.calendar = new FullCalendar.Calendar(calendarEl, {
             // Options de base
             headerToolbar: {
                 left: 'prev,next today',
@@ -417,6 +474,35 @@
                 hour: '2-digit',
                 minute: '2-digit',
                 hour12: false
+            },
+            
+            // Exposer l'instance du calendrier pour la recherche
+            eventContent: function(info) {
+                // Créer le contenu standard
+                const content = document.createElement('div');
+                content.innerHTML = `
+                    <div class="fc-event-main-frame">
+                        <div class="fc-event-title-container">
+                            <div class="fc-event-title fc-sticky">${info.event.title}</div>
+                        </div>
+                    </div>
+                `;
+                
+                // Ajouter des attributs data-* pour les propriétés étendues (pour la recherche)
+                if (info.event.extendedProps) {
+                    for (const [key, value] of Object.entries(info.event.extendedProps)) {
+                        if (typeof value === 'string') {
+                            content.setAttribute(`data-${key}`, value);
+                        } else if (typeof value === 'object' && value !== null) {
+                            content.setAttribute(`data-${key}`, JSON.stringify(value));
+                        }
+                    }
+                }
+                
+                // Ajouter l'ID de l'événement comme attribut
+                content.setAttribute('data-event-id', info.event.id);
+                
+                return { domNodes: [content] };
             },
             
             // Personnalisation des événements
@@ -930,5 +1016,74 @@
             'Refusée': 'bg-secondary text-white'
         }[statut] || 'bg-secondary text-white';
     }
+</script>
+
+<!-- Script pour la gestion des plannings -->
+<script src="{{ url_for('static', filename='js/planning-manager.js') }}"></script>
+
+<!-- Script pour la recherche intelligente -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/calendar-search.css') }}">
+<script src="{{ url_for('static', filename='js/calendar-search.js') }}"></script>
+
+<!-- Code directement inséré pour l'ajout du bouton Planning -->
+<script>
+    // Attendre que la page soit chargée
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log("Initialisation du bouton Planning (code intégré)...");
+        
+        // Créer le bouton d'ajout de planning
+        function createPlanningButton() {
+            // Vérifier si le bouton existe déjà
+            if (document.getElementById('add-planning-button')) return;
+            
+            // Créer le bouton
+            var button = document.createElement('button');
+            button.id = 'add-planning-button';
+            button.className = 'btn btn-primary';
+            button.innerHTML = '<i class="fas fa-plus me-1"></i> Ajouter Planning';
+            button.style.marginLeft = '10px';
+            
+            // Ajouter l'événement click
+            button.onclick = function() {
+                var planningModal = document.getElementById('planning-modal');
+                if (planningModal) {
+                    var modal = new bootstrap.Modal(planningModal);
+                    modal.show();
+                }
+            };
+            
+            // Insérer le bouton après l'onglet Planning
+            var planningTab = document.querySelector('.fc-listMonth-button');
+            if (planningTab && planningTab.parentNode) {
+                planningTab.parentNode.appendChild(button);
+                console.log("Bouton 'Ajouter Planning' ajouté après l'onglet Planning");
+                return true;
+            }
+            
+            // Alternative: insérer dans le dernier chunk de la barre d'outils
+            var toolbarChunks = document.querySelectorAll('.fc-toolbar-chunk');
+            if (toolbarChunks.length > 0) {
+                var lastChunk = toolbarChunks[toolbarChunks.length - 1];
+                lastChunk.appendChild(button);
+                console.log("Bouton 'Ajouter Planning' ajouté dans la barre d'outils");
+                return true;
+            }
+            
+            return false;
+        }
+        
+        // Essayer de créer le bouton plusieurs fois (pour s'assurer que la page est chargée)
+        setTimeout(createPlanningButton, 500);
+        setTimeout(createPlanningButton, 1000);
+        setTimeout(createPlanningButton, 2000);
+        
+        // Observer les changements de vue pour ajouter le bouton quand on passe en vue Planning
+        document.addEventListener('click', function(e) {
+            if (e.target && (e.target.classList.contains('fc-listMonth-button') || 
+                (e.target.textContent && e.target.textContent.includes('Planning')))) {
+                setTimeout(createPlanningButton, 100);
+            }
+        });
+    });
 </script>
 {% endblock %}

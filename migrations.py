@@ -3,7 +3,8 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import text
 from sqlalchemy.exc import ProgrammingError, OperationalError
-from app import db, create_app
+from extensions import db
+from app import create_app
 
 def run_migrations():
     """
@@ -17,7 +18,73 @@ def run_migrations():
         
         # Liste des migrations à exécuter
         migrations = [
-            # Ajout de la colonne stockage_id à la table prestation
+            # Ajout de la colonne observations_supplementaires à la table prestation
+            """
+            ALTER TABLE prestation 
+            ADD COLUMN observations_supplementaires TEXT
+            """,
+            
+            # Ajout de la colonne est_groupage à la table prestation
+            """
+            ALTER TABLE prestation 
+            ADD COLUMN est_groupage BOOLEAN DEFAULT FALSE
+            """,
+            
+            # Ajout de la colonne clients_supplementaires à la table prestation
+            """
+            ALTER TABLE prestation 
+            ADD COLUMN clients_supplementaires TEXT
+            """,
+            
+            # Ajout de la colonne etapes_depart à la table prestation
+            """
+            ALTER TABLE prestation 
+            ADD COLUMN etapes_depart TEXT
+            """,
+            
+            # Ajout de la colonne etapes_arrivee à la table prestation
+            """
+            ALTER TABLE prestation 
+            ADD COLUMN etapes_arrivee TEXT
+            """,
+            
+            # Ajout de la colonne derniere_modification_par à la table prestation
+            """
+            ALTER TABLE prestation 
+            ADD COLUMN derniere_modification_par INTEGER REFERENCES user(id)
+            """,
+            
+            # Ajout de la colonne date_derniere_modification à la table prestation
+            """
+            ALTER TABLE prestation 
+            ADD COLUMN date_derniere_modification TIMESTAMP
+            """,
+            
+            # Ajout de la colonne version à la table prestation
+            """
+            ALTER TABLE prestation 
+            ADD COLUMN version INTEGER DEFAULT 1
+            """,
+            
+            # Ajout de la colonne id_original à la table prestation
+            """
+            ALTER TABLE prestation 
+            ADD COLUMN id_original INTEGER
+            """,
+            
+            # Ajout de la colonne modifie_par à la table prestation
+            """
+            ALTER TABLE prestation 
+            ADD COLUMN modifie_par INTEGER REFERENCES user(id)
+            """,
+            
+            # Ajout de la colonne date_modification à la table prestation
+            """
+            ALTER TABLE prestation 
+            ADD COLUMN date_modification TIMESTAMP
+            """,
+            
+            # Ajout de la colonne stockage_id à la table prestation (migration existante)
             """
             ALTER TABLE prestation 
             ADD COLUMN stockage_id INTEGER REFERENCES stockage(id)

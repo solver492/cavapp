@@ -3,7 +3,7 @@ from flask_login import login_required, current_user
 from sqlalchemy import func, extract
 from datetime import datetime, timedelta
 
-from app import db
+from extensions import db
 from models import Client, Prestation, Facture
 
 dashboard_bp = Blueprint('dashboard', __name__)
@@ -87,7 +87,7 @@ def index():
     ).scalar() or 0
     
     # Recent activities
-    recent_factures = Facture.query.order_by(Facture.date_creation.desc()).limit(5).all()
+    recent_factures = Facture.query.order_by(Facture.date_emission.desc()).limit(5).all()
     
     # Compile stats into a dictionary
     stats = {

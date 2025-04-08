@@ -3,7 +3,7 @@ from flask_login import login_required, current_user
 from werkzeug.security import generate_password_hash
 from sqlalchemy import or_
 
-from app import db
+from extensions import db
 from models import User, TypeVehicule
 from forms import UserForm, SearchUserForm
 from auth import role_required

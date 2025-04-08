@@ -3,7 +3,7 @@ from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 import os
 
-from app import db
+from extensions import db
 from models import Client, Document
 from forms import ClientForm, SearchClientForm
 from utils import allowed_file, save_document
@@ -153,13 +153,11 @@ def edit(id):
 @login_required
 def details(id):
     client = Client.query.get_or_404(id)
-    documents = Document.query.filter_by(client_id=client.id).all()
     
     return render_template(
         'clients/details.html',
         title=f'Fiche client - {client.nom} {client.prenom}',
-        client=client,
-        documents=documents
+        client=client
     )
 
 @client_bp.route('/clients/toggle-archive/<int:id>')

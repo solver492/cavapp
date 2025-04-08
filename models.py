@@ -1,12 +1,18 @@
 from datetime import datetime
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
-from app import db
+from extensions import db
 
 # Association tables
 prestation_transporteurs = db.Table('prestation_transporteurs',
     db.Column('prestation_id', db.Integer, db.ForeignKey('prestation.id'), primary_key=True),
     db.Column('user_id', db.Integer, db.ForeignKey('user.id'), primary_key=True)
+)
+
+# Association table pour les prestations et les clients supplémentaires (pour mode groupage)
+prestation_clients = db.Table('prestation_clients',
+    db.Column('prestation_id', db.Integer, db.ForeignKey('prestation.id'), primary_key=True),
+    db.Column('client_id', db.Integer, db.ForeignKey('client.id'), primary_key=True)
 )
 
 # Association table entre types de déménagement et types de véhicules
@@ -55,18 +61,19 @@ class Client(db.Model):
     prenom = db.Column(db.String(64), nullable=False)
     adresse = db.Column(db.Text, nullable=True)
     code_postal = db.Column(db.String(10), nullable=True)
-    ville = db.Column(db.String(100), nullable=True)
-    pays = db.Column(db.String(50), default='France', nullable=True)
+    ville = db.Column(db.String(64), nullable=True)
+    pays = db.Column(db.String(64), default='France')
     telephone = db.Column(db.String(20), nullable=True)
     email = db.Column(db.String(120), nullable=True)
     type_client = db.Column(db.String(50), nullable=True)
-    tags = db.Column(db.String(200), nullable=True)
+    tags = db.Column(db.Text, nullable=True)
+    statut = db.Column(db.String(20), default='actif')
     archive = db.Column(db.Boolean, default=False)
     date_creation = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     
-    prestations = db.relationship('Prestation', backref='client', lazy=True)
+    prestations_principales = db.relationship('Prestation', backref=db.backref('client_principal', lazy=True), lazy=True, foreign_keys="Prestation.client_id")
+    prestations_supplementaires = db.relationship('Prestation', secondary=prestation_clients, back_populates='clients_supplementaires')
     factures = db.relationship('Facture', backref='client', lazy=True)
-    documents = db.relationship('Document', backref='client', lazy=True)
     
     def __repr__(self):
         return f"{self.nom} {self.prenom}"
@@ -75,23 +82,57 @@ class Document(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nom = db.Column(db.String(255), nullable=False)
     chemin = db.Column(db.String(255), nullable=False)
-    type = db.Column(db.String(50), nullable=True)
+    type = db.Column(db.String(50), nullable=True)  # Type de document (facture, contrat, etc.)
+    taille = db.Column(db.Integer, nullable=True)   # Taille en octets
+    format = db.Column(db.String(20), nullable=True)  # Extension du fichier (pdf, jpg, etc.)
+    notes = db.Column(db.Text, nullable=True)  # Notes sur le document
+    observations_supplementaires = db.Column(db.Text, nullable=True)  # Observations supplémentaires (texte enrichi)
+    tags = db.Column(db.String(200), nullable=True)  # Tags pour faciliter la recherche
+    statut = db.Column(db.String(50), default='Actif')  # Actif, Archivé, Supprimé
     date_upload = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-    client_id = db.Column(db.Integer, db.ForeignKey('client.id'), nullable=False)
+    date_modification = db.Column(db.DateTime, nullable=True, onupdate=datetime.utcnow)  # Date de dernière modification
+    prestation_id = db.Column(db.Integer, db.ForeignKey('prestation.id'), nullable=True)
+    client_id = db.Column(db.Integer, db.ForeignKey('client.id'), nullable=True)
+    stockage_id = db.Column(db.Integer, db.ForeignKey('stockage.id'), nullable=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)  # Utilisateur qui a uploadé
+    
+    prestation = db.relationship('Prestation', backref=db.backref('documents', lazy=True))
+    client = db.relationship('Client', backref=db.backref('documents', lazy=True))
+    stockage = db.relationship('Stockage', backref=db.backref('documents', lazy=True))
+    user = db.relationship('User', backref=db.backref('documents_uploaded', lazy=True))
+    
+    def __repr__(self):
+        return f"<Document {self.nom}>"
+    
+    # Convertit le document en dictionnaire pour l'API
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'nom': self.nom,
+            'chemin': self.chemin,
+            'type': self.type,
+            'taille': self.taille,
+            'format': self.format,
+            'notes': self.notes,
+            'statut': self.statut,
+            'date_upload': self.date_upload.strftime('%d/%m/%Y %H:%M'),
+            'prestation_id': self.prestation_id,
+            'client_id': self.client_id,
+            'stockage_id': self.stockage_id
+        }
 
 class TypeVehicule(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nom = db.Column(db.String(100), nullable=False, unique=True)
     description = db.Column(db.Text, nullable=True)
     capacite = db.Column(db.String(50), nullable=True)
-    date_creation = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    image = db.Column(db.String(255), nullable=True)
     
-    # Relation avec les types de déménagement
     types_demenagement = db.relationship('TypeDemenagement', secondary=type_demenagement_vehicule, 
                                         back_populates='types_vehicule')
     
     def __repr__(self):
-        return f"{self.nom}"
+        return f"<TypeVehicule {self.nom}>"
 
 class TypeDemenagement(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -99,41 +140,126 @@ class TypeDemenagement(db.Model):
     description = db.Column(db.Text, nullable=True)
     date_creation = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     
-    # Relation avec les types de véhicule
     types_vehicule = db.relationship('TypeVehicule', secondary=type_demenagement_vehicule, 
                                     back_populates='types_demenagement')
     
     def __repr__(self):
-        return f"{self.nom}"
+        return f"<TypeDemenagement {self.nom}>"
+
+class Transporteur(db.Model):
+    __tablename__ = 'transporteurs'
+    id = db.Column(db.Integer, primary_key=True)
+    nom = db.Column(db.String(100), nullable=False)
+    prenom = db.Column(db.String(100), nullable=True)
+    telephone = db.Column(db.String(20), nullable=True)
+    email = db.Column(db.String(120), nullable=True)
+    vehicule = db.Column(db.String(100), nullable=True)
+    type_vehicule = db.Column(db.String(100), nullable=True)
+    disponibilite = db.Column(db.String(255), nullable=True)  # Format JSON ou texte
+    notes = db.Column(db.Text, nullable=True)
+    statut = db.Column(db.String(20), default='actif')
+    vehicule_id = db.Column(db.Integer, db.ForeignKey('vehicules.id'), nullable=True)
+    
+    prestations = db.relationship('Prestation', backref='transporteur_assigne', lazy=True, foreign_keys="Prestation.transporteur_id")
+    
+    def __repr__(self):
+        return f"<Transporteur {self.nom} {self.prenom}>"
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'nom': self.nom,
+            'prenom': self.prenom,
+            'telephone': self.telephone,
+            'email': self.email,
+            'vehicule': self.vehicule,
+            'type_vehicule': self.type_vehicule
+        }
+
+class Vehicule(db.Model):
+    __tablename__ = 'vehicules'
+    id = db.Column(db.Integer, primary_key=True)
+    marque = db.Column(db.String(50), nullable=False)
+    modele = db.Column(db.String(50), nullable=False)
+    type = db.Column(db.String(50), nullable=False)  # Fourgon, Camion, Semi-remorque, etc.
+    annee = db.Column(db.Integer, nullable=True)
+    immatriculation = db.Column(db.String(20), nullable=True)
+    capacite = db.Column(db.String(50), nullable=True)
+    statut = db.Column(db.String(20), default='actif')  # actif, en maintenance, hors service
+    notes = db.Column(db.Text, nullable=True)
+    transporteur_id = db.Column(db.Integer, db.ForeignKey('transporteurs.id'), nullable=True)
+    
+    transporteur = db.relationship('Transporteur', backref='vehicules', lazy=True, foreign_keys=[transporteur_id])
+    prestations = db.relationship('Prestation', backref='vehicule_assigne', lazy=True, foreign_keys="Prestation.vehicule_id")
+    
+    def __repr__(self):
+        return f"<Vehicule {self.marque} {self.modele}>"
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'marque': self.marque,
+            'modele': self.modele,
+            'type': self.type,
+            'immatriculation': self.immatriculation,
+            'capacite': self.capacite
+        }
 
 class Prestation(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     client_id = db.Column(db.Integer, db.ForeignKey('client.id'), nullable=False)
     commercial_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    transporteur_id = db.Column(db.Integer, db.ForeignKey('transporteurs.id'), nullable=True)
+    vehicule_id = db.Column(db.Integer, db.ForeignKey('vehicules.id'), nullable=True)
     date_debut = db.Column(db.DateTime, nullable=False)
     date_fin = db.Column(db.DateTime, nullable=False)
     adresse_depart = db.Column(db.Text, nullable=False)
     adresse_arrivee = db.Column(db.Text, nullable=False)
+    type_demenagement = db.Column(db.String(100), nullable=False)
     type_demenagement_id = db.Column(db.Integer, db.ForeignKey('type_demenagement.id'), nullable=True)
-    type_demenagement = db.Column(db.String(100), nullable=False)  # Conserver pour compatibilité
-    tags = db.Column(db.String(200), nullable=True)
-    societe = db.Column(db.String(200), nullable=True)
-    montant = db.Column(db.Float, nullable=True)
-    priorite = db.Column(db.String(50), default='Normale')
-    statut = db.Column(db.String(50), default='En attente')
+    statut = db.Column(db.String(50), default='En attente')  # En attente, Confirmé, En cours, Terminé, Annulé
+    priorite = db.Column(db.String(20), default='Normale')  # Basse, Normale, Haute, Urgente
+    status_transporteur = db.Column(db.String(20), default='en_attente')  # en_attente, accepte, refuse
+    raison_refus = db.Column(db.Text, nullable=True)  # Raison du refus par le transporteur
+    date_reponse = db.Column(db.DateTime, nullable=True)  # Date de réponse du transporteur
     observations = db.Column(db.Text, nullable=True)
     archive = db.Column(db.Boolean, default=False)
-    stockage_id = db.Column(db.Integer, db.ForeignKey('stockage.id'), nullable=True)
     date_creation = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-    vehicules_suggeres = db.Column(db.Text, nullable=True)  # Ajout pour synchroniser avec la base de données
+    date_modification = db.Column(db.DateTime, nullable=True)
+    createur_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    modificateur_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    stockage_id = db.Column(db.Integer, db.ForeignKey('stockage.id'), nullable=True)
+    mode_groupage = db.Column(db.Boolean, default=False)
+    tags = db.Column(db.Text, nullable=True)
+    societe = db.Column(db.String(100), nullable=True)
+    montant = db.Column(db.Float, nullable=True, default=0)
     
+    # Relations
+    commercial = db.relationship('User', foreign_keys=[commercial_id], backref='prestations_commercial')
+    createur = db.relationship('User', foreign_keys=[createur_id], backref='prestations_creees')
+    modificateur = db.relationship('User', foreign_keys=[modificateur_id], backref='prestations_modifiees')
     transporteurs = db.relationship('User', secondary=prestation_transporteurs, back_populates='prestations')
-    commercial = db.relationship('User', foreign_keys=[commercial_id], backref='prestations_creees')
+    clients_supplementaires = db.relationship('Client', secondary=prestation_clients, back_populates='prestations_supplementaires')
     factures = db.relationship('Facture', backref='prestation', lazy=True)
     type_demenagement_obj = db.relationship('TypeDemenagement', backref='prestations')
+    versions = db.relationship('PrestationVersion', backref='prestation_courante', lazy=True, foreign_keys="PrestationVersion.prestation_id")
     
     def __repr__(self):
-        return f"Prestation {self.id} - {self.client.nom} {self.client.prenom}"
+        return f"Prestation {self.id} - {self.client_principal.nom} {self.client_principal.prenom}"
+
+# Nouvelle table pour stocker les versions des prestations
+class PrestationVersion(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    prestation_id = db.Column(db.Integer, db.ForeignKey('prestation.id'), nullable=False)
+    version = db.Column(db.Integer, nullable=False)
+    donnees = db.Column(db.Text, nullable=False)  # JSON avec toutes les données de la prestation
+    modifie_par = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    date_modification = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    
+    modificateur = db.relationship('User', backref='versions_prestations')
+    
+    def __repr__(self):
+        return f"Version {self.version} de Prestation {self.prestation_id}"
 
 class Facture(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -141,23 +267,36 @@ class Facture(db.Model):
     client_id = db.Column(db.Integer, db.ForeignKey('client.id'), nullable=False)
     prestation_id = db.Column(db.Integer, db.ForeignKey('prestation.id'), nullable=True)
     stockage_id = db.Column(db.Integer, db.ForeignKey('stockage.id'), nullable=True)
-    societe = db.Column(db.String(50), nullable=True)  # Ajout du champ société
+    date_emission = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    date_echeance = db.Column(db.DateTime, nullable=True)
     montant_ht = db.Column(db.Float, nullable=False)
-    taux_tva = db.Column(db.Float, nullable=False, default=20.0)
+    tva = db.Column(db.Float, nullable=False, default=20.0)
     montant_ttc = db.Column(db.Float, nullable=False)
-    date_emission = db.Column(db.DateTime, nullable=False)
-    date_echeance = db.Column(db.DateTime, nullable=False)
+    statut = db.Column(db.String(50), default='Non payée')  # Non payée, Payée, Annulée, Retard
+    date_paiement = db.Column(db.DateTime, nullable=True)
     mode_paiement = db.Column(db.String(50), nullable=True)
-    statut = db.Column(db.String(50), default='En attente')
-    notes = db.Column(db.Text, nullable=True)
-    date_creation = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    observations = db.Column(db.Text, nullable=True)
+    commercial_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    
+    commercial = db.relationship('User', foreign_keys=[commercial_id], backref='factures_creees')
+    fichiers = db.relationship('FichierFacture', backref='facture', lazy=True, cascade="all, delete-orphan")
     
     def __repr__(self):
-        return f"Facture {self.numero}"
+        return f"Facture {self.numero} - {self.client.nom} {self.client.prenom}"
+
+class FichierFacture(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    facture_id = db.Column(db.Integer, db.ForeignKey('facture.id'), nullable=False)
+    nom_fichier = db.Column(db.String(255), nullable=False)
+    chemin_fichier = db.Column(db.String(255), nullable=False)
+    type_fichier = db.Column(db.String(50), nullable=False)
+    date_upload = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    
+    def __repr__(self):
+        return f"<FichierFacture {self.nom_fichier}>"
 
 # Modèle pour les articles stockés dans un emplacement
 class StockageArticle(db.Model):
-    # Table utilise une clé primaire composée
     stockage_id = db.Column(db.Integer, db.ForeignKey('stockage.id'), primary_key=True)
     article_id = db.Column(db.Integer, db.ForeignKey('article_stockage.id'), primary_key=True)
     quantite = db.Column(db.Integer, default=1)
@@ -167,15 +306,13 @@ class StockageArticle(db.Model):
     article = db.relationship('ArticleStockage', backref='stockage_articles')
     
     def __repr__(self):
-        if hasattr(self, 'article') and self.article and hasattr(self.article, 'nom') and hasattr(self, 'stockage') and self.stockage and hasattr(self.stockage, 'reference'):
-            return f"{self.article.nom} (x{self.quantite}) dans {self.stockage.reference}"
-        return f"Article {self.article_id} (x{self.quantite}) dans Stockage {self.stockage_id}"
+        return f"<StockageArticle: {self.article.nom} ({self.quantite}) dans Stockage {self.stockage.reference}>"
 
 class Stockage(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     client_id = db.Column(db.Integer, db.ForeignKey('client.id'), nullable=False)
     reference = db.Column(db.String(50), unique=True, nullable=False)
-    date_debut = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    date_debut = db.Column(db.DateTime, nullable=False)
     date_fin = db.Column(db.DateTime, nullable=True)  # Peut être indéfinie pour un stockage sans date de fin
     statut = db.Column(db.String(50), default='Actif')  # Actif, Terminé, En attente
     montant_mensuel = db.Column(db.Float, nullable=False)

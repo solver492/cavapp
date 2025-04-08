@@ -2,7 +2,7 @@ import os
 from datetime import datetime
 from werkzeug.utils import secure_filename
 from models import User, Client, Prestation, Facture
-from app import db
+from extensions import db
 
 def create_default_admin():
     """Create default admin user if it doesn't exist"""

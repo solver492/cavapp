@@ -42,6 +42,7 @@
                         <th>Destination</th>
                         <th>Type</th>
                         <th>Statut</th>
+                        <th>Version</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -49,7 +50,7 @@
                     {% if prestations %}
                         {% for prestation in prestations %}
                             <tr {% if prestation.archive %}class="table-secondary"{% endif %}>
-                                <td>{{ prestation.client.nom }} {{ prestation.client.prenom }}</td>
+                                <td>{{ prestation.client_principal.nom }} {{ prestation.client_principal.prenom }}</td>
                                 <td>{{ prestation.date_debut.strftime('%d/%m/%Y') }}</td>
                                 <td>{{ prestation.date_fin.strftime('%d/%m/%Y') }}</td>
                                 <td title="{{ prestation.adresse_depart }}">{{ prestation.adresse_depart|truncate(30) }}</td>
@@ -61,8 +62,17 @@
                                     </span>
                                 </td>
                                 <td>
+                                    {% if prestation.version and prestation.version > 1 %}
+                                        <span class="badge bg-info" data-bs-toggle="tooltip" title="Modifié par {{ prestation.modificateur.prenom }} {{ prestation.modificateur.nom }} le {{ prestation.date_modification.strftime('%d/%m/%Y à %H:%M') }}">
+                                            v{{ prestation.version }}
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-light text-dark">Original</span>
+                                    {% endif %}
+                                </td>
+                                <td>
                                     <div class="btn-group btn-group-sm">
-                                        <a href="{{ url_for('prestation.view', id=prestation.id) }}" class="btn btn-outline-info" title="Visualiser">
+                                        <a href="{{ url_for('prestation.edit', id=prestation.id) }}" class="btn btn-outline-info" title="Visualiser">
                                             <i class="fas fa-eye"></i>
                                         </a>
                                         <a href="{{ url_for('prestation.edit', id=prestation.id) }}" class="btn btn-outline-primary" title="Modifier">
@@ -87,7 +97,7 @@
                         {% endfor %}
                     {% else %}
                         <tr>
-                            <td colspan="8" class="text-center py-3">
+                            <td colspan="9" class="text-center py-3">
                                 <div class="alert alert-info mb-0">
                                     <i class="fas fa-info-circle"></i> Aucune prestation n'a été ajoutée pour le moment.
                                 </div>

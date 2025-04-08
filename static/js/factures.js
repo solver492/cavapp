@@ -94,22 +94,29 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (montantHtInput && tauxTvaInput && montantTtcInput) {
         // Function to calculate TTC
-        const calculateTTC = function() {
-            const montantHt = parseFloat(montantHtInput.value) || 0;
-            const tauxTva = parseFloat(tauxTvaInput.value) || 0;
+        const calculateResteAPayer = function() {
+            const montantTotal = parseFloat(montantHtInput.value) || 0;
+            const montantAcompte = parseFloat(tauxTvaInput.value) || 0;
             
-            const montantTva = montantHt * (tauxTva / 100);
-            const montantTtc = montantHt + montantTva;
+            // Calcul du reste à payer (montant total - acompte)
+            const resteAPayer = montantTotal - montantAcompte;
             
-            montantTtcInput.value = montantTtc.toFixed(2);
+            // Mettre à jour l'affichage du reste à payer
+            const resteAPayerDisplay = document.getElementById('reste-a-payer');
+            if (resteAPayerDisplay) {
+                resteAPayerDisplay.textContent = resteAPayer.toFixed(2) + ' €';
+            }
+
+            // On ne calcule plus automatiquement la commission commerciale
+            // L'utilisateur saisit directement le montant de la commission
         };
         
         // Calculate on input change
-        montantHtInput.addEventListener('input', calculateTTC);
-        tauxTvaInput.addEventListener('input', calculateTTC);
+        montantHtInput.addEventListener('input', calculateResteAPayer);
+        tauxTvaInput.addEventListener('input', calculateResteAPayer);
         
         // Initial calculation
-        calculateTTC();
+        calculateResteAPayer();
     }
     
     // Handle facture date validation

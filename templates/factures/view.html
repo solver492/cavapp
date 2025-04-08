@@ -79,15 +79,48 @@
                         </tr>
                         <tr>
                             <th>Montant TVA</th>
-                            <td>{{ (facture.montant_ttc - facture.montant_ht)|round(2) }} €</td>
+                            <td>{{ ((facture.montant_ttc|default(0)) - (facture.montant_ht|default(0)))|round(2) }} €</td>
                         </tr>
                         <tr>
                             <th>Montant TTC</th>
                             <td><strong>{{ facture.montant_ttc }} €</strong></td>
                         </tr>
+                        <tr>
+                            <th>Montant de l'acompte</th>
+                            <td>{{ facture.montant_acompte|default(0) }} €</td>
+                        </tr>
+                        <tr>
+                            <th>Reste à payer</th>
+                            <td><strong>{{ ((facture.montant_ttc|default(0)) - (facture.montant_acompte|default(0)))|round(2) }} €</strong></td>
+                        </tr>
                     </table>
                 </div>
             </div>
+            
+            <!-- Commission commerciale -->
+            {% if current_user.is_admin or current_user.id == facture.commercial_id %}
+            <div class="card mb-4">
+                <div class="card-header bg-purple text-white">
+                    <h5 class="mb-0"><i class="fas fa-percentage"></i> Commission commerciale</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-details">
+                        <tr>
+                            <th width="40%">Commercial</th>
+                            <td>{{ facture.commercial.nom if facture.commercial else 'Non défini' }}</td>
+                        </tr>
+                        <tr>
+                            <th>Montant TTC de la commission</th>
+                            <td>{{ facture.commission_montant|default(0) }} €</td>
+                        </tr>
+                        <tr>
+                            <th>Pourcentage de commission</th>
+                            <td>{{ facture.commission_pourcentage|default(0) }} %</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
         </div>
         
         <!-- Informations client et prestation -->
@@ -176,6 +209,70 @@
         </div>
     </div>
     
+    <!-- Documents associés -->
+    <div class="row" id="documents">
+        <div class="col-12">
+            <div class="card mb-4">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0"><i class="fas fa-file-pdf"></i> Documents de facturation</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Documents attachés</h6>
+                            {% if facture.fichiers %}
+                                <ul class="list-group">
+                                {% for fichier in facture.fichiers %}
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <i class="far fa-file-pdf text-danger"></i>
+                                            <span>{{ fichier.nom_fichier }}</span>
+                                            <small class="text-muted ms-2">({{ fichier.type_fichier }})</small>
+                                        </div>
+                                        <div>
+                                            <a href="{{ url_for('facture.download_file', fichier_id=fichier.id) }}" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-download"></i>
+                                            </a>
+                                            {% if current_user.is_admin %}
+                                            <button class="btn btn-sm btn-outline-danger delete-file" data-file-id="{{ fichier.id }}">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                    </li>
+                                {% endfor %}
+                                </ul>
+                            {% else %}
+                                <p class="text-muted">Aucun document attaché à cette facture.</p>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Ajouter un document</h6>
+                            <form action="{{ url_for('facture.upload_file', facture_id=facture.id) }}" method="post" enctype="multipart/form-data">
+                                <div class="mb-3">
+                                    <label for="file" class="form-label">Sélectionner un fichier PDF</label>
+                                    <input type="file" name="file" id="file" class="form-control" accept=".pdf" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="type_fichier" class="form-label">Type de document</label>
+                                    <select name="type_fichier" id="type_fichier" class="form-select" required>
+                                        <option value="facture_client">Facture client</option>
+                                        <option value="facture_commission">Facture de commission</option>
+                                        <option value="acompte">Acompte</option>
+                                        <option value="autre">Autre document</option>
+                                    </select>
+                                </div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-upload"></i> Téléverser
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <!-- Notes -->
     {% if facture.notes %}
     <div class="row">
@@ -252,5 +349,25 @@
     .badge.status-annulée {
         background-color: #6c757d;
     }
+    .bg-purple {
+        background-color: #6f42c1;
+    }
 </style>
+{% endblock %}
+
+{% block page_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Gestionnaire pour les boutons de suppression de fichiers
+    const deleteButtons = document.querySelectorAll('.delete-file');
+    deleteButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            if (confirm('Êtes-vous sûr de vouloir supprimer ce fichier ?')) {
+                const fileId = this.getAttribute('data-file-id');
+                window.location.href = "{{ url_for('facture.delete_file', facture_id=facture.id) }}?file_id=" + fileId;
+            }
+        });
+    });
+});
+</script>
 {% endblock %}

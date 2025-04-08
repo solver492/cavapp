@@ -105,29 +105,69 @@
         </div>
     </div>
     
-    {% if documents %}
+    <!-- Section documents -->
     <div class="card mb-4">
-        <div class="card-header">
-            <h5 class="mb-0"><i class="fas fa-file-pdf"></i> Documents</h5>
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-file-alt"></i> Documents</h5>
+            <a href="{{ url_for('document.client_documents', client_id=client.id) }}" class="btn btn-primary btn-sm">
+                <i class="fas fa-folder-open"></i> Gérer les documents
+            </a>
         </div>
         <div class="card-body">
-            <ul class="document-list">
-                {% for document in documents %}
-                    <li>
-                        <div class="document-name">
-                            <i class="fas fa-file-pdf"></i> {{ document.nom }}
-                        </div>
-                        <div class="document-actions">
-                            <a href="{{ url_for('client.download_document', doc_id=document.id) }}" title="Télécharger" class="btn btn-sm btn-outline-primary">
-                                <i class="fas fa-download"></i> Télécharger
-                            </a>
-                        </div>
-                    </li>
-                {% endfor %}
-            </ul>
+            {% if client.documents|length > 0 %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Nom</th>
+                                <th>Type</th>
+                                <th>Date</th>
+                                <th>Notes</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for document in client.documents|sort(attribute='date_upload', reverse=true) %}
+                                <tr>
+                                    <td>
+                                        <i class="fas fa-file-{{ 'pdf' if document.format == 'pdf' else 'alt' }} text-{{ 'danger' if document.format == 'pdf' else 'primary' }}"></i>
+                                        {{ document.nom }}
+                                    </td>
+                                    <td>{{ document.type|capitalize if document.type else '-' }}</td>
+                                    <td>{{ document.date_upload.strftime('%d/%m/%Y') }}</td>
+                                    <td>
+                                        {% if document.notes %}
+                                            <span data-toggle="tooltip" title="{{ document.notes }}">
+                                                <i class="fas fa-sticky-note text-warning"></i> 
+                                                {{ document.notes|truncate(30, true) }}
+                                            </span>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{{ url_for('document.download_document', document_id=document.id) }}" class="btn btn-info" title="Télécharger">
+                                                <i class="fas fa-download"></i>
+                                            </a>
+                                            <a href="{{ url_for('document.view_document', document_id=document.id) }}" class="btn btn-primary" title="Voir">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> Aucun document n'est associé à ce client.
+                    <a href="{{ url_for('document.client_documents', client_id=client.id) }}" class="alert-link">Ajouter des documents</a>
+                </div>
+            {% endif %}
         </div>
     </div>
-    {% endif %}
     
     <!-- Section prestations si elles existent -->
     {% if client.prestations %}
@@ -239,6 +279,95 @@
                 }
             });
         });
+        
+        // Ajout du bouton WhatsApp pour le téléphone
+        function ajouterBoutonWhatsApp() {
+            // Trouver précisément la cellule du téléphone
+            const thTelephone = Array.from(document.querySelectorAll('th')).find(th => 
+                th.textContent.includes('Téléphone'));
+            
+            if (thTelephone) {
+                // Trouver la cellule adjacente qui contient le numéro
+                const tdTelephone = thTelephone.nextElementSibling || thTelephone.parentNode.querySelector('td');
+                
+                if (tdTelephone && tdTelephone.textContent.trim().length > 3) {
+                    // Vérifier si un bouton existe déjà
+                    if (!tdTelephone.querySelector('.whatsapp-btn')) {
+                        // Formater le numéro pour WhatsApp
+                        let numero = tdTelephone.textContent.trim();
+                        let numeroWhatsApp = numero.replace(/\D/g, '');
+                        if (numeroWhatsApp.startsWith('0')) {
+                            numeroWhatsApp = '33' + numeroWhatsApp.substring(1);
+                        }
+                        
+                        // Créer le bouton WhatsApp
+                        const whatsappBtn = document.createElement('a');
+                        whatsappBtn.href = 'https://wa.me/' + numeroWhatsApp;
+                        whatsappBtn.className = 'whatsapp-btn';
+                        whatsappBtn.target = '_blank';
+                        whatsappBtn.innerHTML = '<i class="fab fa-whatsapp"></i>';
+                        whatsappBtn.title = 'Contacter par WhatsApp';
+                        
+                        // Styles directement appliqués
+                        whatsappBtn.style.display = 'inline-flex';
+                        whatsappBtn.style.alignItems = 'center';
+                        whatsappBtn.style.justifyContent = 'center';
+                        whatsappBtn.style.width = '32px';
+                        whatsappBtn.style.height = '32px';
+                        whatsappBtn.style.borderRadius = '50%';
+                        whatsappBtn.style.backgroundColor = '#25D366';
+                        whatsappBtn.style.color = 'white';
+                        whatsappBtn.style.margin = '0 0 0 10px';
+                        whatsappBtn.style.textDecoration = 'none';
+                        whatsappBtn.style.boxShadow = '0 2px 5px rgba(0,0,0,0.1)';
+                        whatsappBtn.style.transition = 'transform 0.3s ease';
+                        
+                        // Effet de survol
+                        whatsappBtn.onmouseover = function() {
+                            this.style.backgroundColor = '#128C7E';
+                            this.style.transform = 'translateY(-2px)';
+                        };
+                        whatsappBtn.onmouseout = function() {
+                            this.style.backgroundColor = '#25D366';
+                            this.style.transform = 'translateY(0)';
+                        };
+                        
+                        // Créer un conteneur pour le numéro et le bouton
+                        const container = document.createElement('div');
+                        container.style.display = 'flex';
+                        container.style.alignItems = 'center';
+                        
+                        // Ajouter le numéro original et le bouton au conteneur
+                        container.appendChild(document.createTextNode(numero));
+                        container.appendChild(whatsappBtn);
+                        
+                        // Remplacer le contenu de la cellule
+                        tdTelephone.innerHTML = '';
+                        tdTelephone.appendChild(container);
+                        
+                        console.log('Bouton WhatsApp ajouté avec succès!');
+                    }
+                }
+            }
+            
+            // S'assurer qu'aucun bouton n'apparaisse dans la cellule du code postal
+            const thCodePostal = Array.from(document.querySelectorAll('th')).find(th => 
+                th.textContent.includes('Code postal'));
+                
+            if (thCodePostal) {
+                const tdCodePostal = thCodePostal.nextElementSibling || thCodePostal.parentNode.querySelector('td');
+                if (tdCodePostal) {
+                    const whatsappBtn = tdCodePostal.querySelector('.whatsapp-btn');
+                    if (whatsappBtn) {
+                        whatsappBtn.remove();
+                    }
+                }
+            }
+        }
+        
+        // Exécuter immédiatement et après un court délai
+        ajouterBoutonWhatsApp();
+        setTimeout(ajouterBoutonWhatsApp, 500);
     });
 </script>
 

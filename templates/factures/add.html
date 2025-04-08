@@ -77,8 +77,8 @@
                 
                 <div class="row mb-3">
                     <div class="col-md-6">
-                        <label for="taux_tva" class="form-label">{{ form.taux_tva.label.text }} <span class="text-danger">*</span></label>
-                        {{ form.taux_tva(class="form-control" + (" is-invalid" if form.taux_tva.errors else ""), id="taux_tva") }}
+                        <label for="taux_tva" class="form-label">Montant de l'acompte <span class="text-danger">*</span></label>
+                        {{ form.taux_tva(class="form-control" + (" is-invalid" if form.taux_tva.errors else ""), id="taux_tva", placeholder="Montant que le client a déjà payé") }}
                         {% for error in form.taux_tva.errors %}
                             <div class="invalid-feedback">{{ error }}</div>
                         {% endfor %}
@@ -96,7 +96,7 @@
                 <div class="row mb-3">
                     <div class="col-md-6">
                         <label for="notes" class="form-label">{{ form.notes.label.text }}</label>
-                        {{ form.notes(class="form-control" + (" is-invalid" if form.notes.errors else ""), id="notes") }}
+                        {{ form.notes(class="form-control" + (" is-invalid" if form.notes.errors else ""), id="notes", rows="3") }}
                         {% for error in form.notes.errors %}
                             <div class="invalid-feedback">{{ error }}</div>
                         {% endfor %}
@@ -110,25 +110,28 @@
                         {% endfor %}
                     </div>
                 </div>
-                
+
+                <!-- Champ caché pour le commercial -->
+                {{ form.commercial_id(type="hidden", value=current_user.id) }}
+
                 <div class="row mb-4">
                     <div class="col-md-4">
-                        <label for="montant_ht" class="form-label">{{ form.montant_ht.label.text }} <span class="text-danger">*</span></label>
-                        {{ form.montant_ht(class="form-control" + (" is-invalid" if form.montant_ht.errors else ""), id="montant_ht", type="number", step="0.01") }}
+                        <label for="montant_ht" class="form-label">Montant TTC <span class="text-danger">*</span></label>
+                        {{ form.montant_ht(class="form-control" + (" is-invalid" if form.montant_ht.errors else ""), id="montant_ht", type="number", step="0.01", placeholder="Montant total TTC") }}
                         {% for error in form.montant_ht.errors %}
                             <div class="invalid-feedback">{{ error }}</div>
                         {% endfor %}
                     </div>
                     
                     <div class="col-md-2 text-center d-flex align-items-center justify-content-center">
-                        <div class="h4 mb-0">+</div>
+                        <div class="h4 mb-0">-</div>
                     </div>
                     
                     <div class="col-md-2 text-center">
-                        <label class="form-label">TVA</label>
+                        <label class="form-label">Reste à payer</label>
                         <div class="d-flex align-items-center">
-                            <div class="form-control-plaintext text-center">
-                                {{ form.montant_ht.data|float * form.taux_tva.data|float / 100 if form.montant_ht.data and form.taux_tva.data else 0 }} €
+                            <div class="form-control-plaintext text-center" id="reste-a-payer">
+                                {{ form.montant_ht.data|float - form.taux_tva.data|float if form.montant_ht.data and form.taux_tva.data else 0 }} €
                             </div>
                         </div>
                     </div>
@@ -138,8 +141,8 @@
                     </div>
                     
                     <div class="col-md-3">
-                        <label for="montant_ttc" class="form-label">{{ form.montant_ttc.label.text }} <span class="text-danger">*</span></label>
-                        {{ form.montant_ttc(class="form-control" + (" is-invalid" if form.montant_ttc.errors else ""), id="montant_ttc", type="number", step="0.01", readonly=True) }}
+                        <label for="montant_ttc" class="form-label">Montant TTC de la Commission commerciale <span class="text-danger">*</span></label>
+                        {{ form.montant_ttc(class="form-control" + (" is-invalid" if form.montant_ttc.errors else ""), id="montant_ttc", type="number", step="0.01") }}
                         {% for error in form.montant_ttc.errors %}
                             <div class="invalid-feedback">{{ error }}</div>
                         {% endfor %}

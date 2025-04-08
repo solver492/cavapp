@@ -18,7 +18,7 @@ class Config:
     # File upload settings
     UPLOAD_FOLDER = 'uploads'
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max upload
-    ALLOWED_EXTENSIONS = {'pdf'}
+    ALLOWED_EXTENSIONS = {'pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx', 'xls', 'xlsx', 'txt'}
     
     # Application settings
     APP_NAME = "Cavalier Déménagement"

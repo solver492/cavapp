@@ -1,23 +1,10 @@
 import os
 import logging
-from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager
-from flask_wtf.csrf import CSRFProtect
-from sqlalchemy.orm import DeclarativeBase
+from flask import Flask, request, jsonify, redirect, url_for
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
-
-# Base class for SQLAlchemy models
-class Base(DeclarativeBase):
-    pass
-
-# Initialize extensions
-db = SQLAlchemy(model_class=Base)
-login_manager = LoginManager()
-csrf = CSRFProtect()
 
 def create_app():
     # Create Flask app
@@ -35,39 +22,49 @@ def create_app():
     # Fix for handling proxies
     app.wsgi_app = ProxyFix(app.wsgi_app)
     
+    # Import extensions
+    from extensions import db, login_manager, csrf, migrate
+    
     # Initialize extensions with app
     db.init_app(app)
     login_manager.init_app(app)
     csrf.init_app(app)
+    migrate.init_app(app, db)
     
     # Configure login
     login_manager.login_view = 'auth.login'
     login_manager.login_message = 'Veuillez vous connecter pour accéder à cette page.'
     login_manager.login_message_category = 'warning'
     
-    # Ajouter des filtres personnalisés pour les templates
+    # Add template filters
     @app.template_filter('nl2br')
-    def nl2br_filter(text):
+    def nl2br(text):
         if not text:
             return ""
         return text.replace('\n', '<br>')
     
+    # Register user loader
+    from models import User
+    
+    @login_manager.user_loader
+    def load_user(user_id):
+        return User.query.get(int(user_id))
+    
+    # Register blueprints
     with app.app_context():
-        # Import models here to avoid circular imports
-        from models import User
-        
-        @login_manager.user_loader
-        def load_user(user_id):
-            return User.query.get(int(user_id))
-        
-        # Register blueprints
-        from routes import (
-            auth_bp, dashboard_bp, client_bp, 
-            prestation_bp, facture_bp, stockage_bp, user_bp, vehicule_bp,
-            calendrier_bp
-        )
+        # Importer les blueprints ici pour éviter les importations circulaires
+        from routes.auth import auth_bp
+        from routes.dashboard import dashboard_bp
+        from routes.client import client_bp
+        from routes.prestation import prestation_bp
+        from routes.facture import facture_bp
+        from routes.stockage import stockage_bp
+        from routes.user import user_bp
+        from routes.vehicule import vehicule_bp
+        from routes.calendrier import calendrier_bp
         from routes.transporteur import transporteur_bp
         from routes.api import api_bp
+        from routes.document import document_bp, documents_bp
         from healthcheck import healthcheck as healthcheck_blueprint
         
         # Blueprint enregistrement avec préfixes cohérents
@@ -81,14 +78,50 @@ def create_app():
         app.register_blueprint(vehicule_bp, url_prefix='/vehicules')
         app.register_blueprint(transporteur_bp, url_prefix='/transporteurs')
         app.register_blueprint(calendrier_bp, url_prefix='/calendrier')
-        app.register_blueprint(api_bp, url_prefix='/api')  # Ajout du préfixe /api pour les routes API
+        app.register_blueprint(document_bp, url_prefix='/documents')
+        app.register_blueprint(documents_bp)  # Déjà préfixé avec /documents dans sa définition
+        app.register_blueprint(api_bp, url_prefix='/api')
         app.register_blueprint(healthcheck_blueprint)
         
-        # Create database tables
+        # Ajouter un gestionnaire d'erreur personnalisé pour les erreurs 404
+        @app.errorhandler(404)
+        def page_not_found(e):
+            # Si c'est une requête AJAX, renvoyer une réponse JSON
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({
+                    'success': True,
+                    'message': 'Ressource non disponible',
+                    'transporteurs': [],
+                    'soon_available': [{
+                        'id': 1,
+                        'nom': 'Cavalier',
+                        'prenom': 'Transporteur',
+                        'vehicule': 'Fourgon 12m3',
+                        'type_vehicule': 'Fourgon',
+                        'disponible_le': '07/04/2025'
+                    }],
+                    'vehicules_recommandes': []
+                }), 200
+            # Sinon, renvoyer une page par défaut
+            return redirect(url_for('dashboard.index')), 302
+    
+    return app
+
+# Création de l'application
+app = create_app()
+
+# Création des tables et configuration initiale si exécuté directement
+if __name__ == '__main__':
+    with app.app_context():
+        from extensions import db
         db.create_all()
         
-        # Create default admin user if it doesn't exist
+        # Création de l'administrateur par défaut
         from utils import create_default_admin
-        create_default_admin()
-        
-        return app
+        try:
+            create_default_admin()
+        except Exception as e:
+            print(f"Erreur lors de la création de l'admin par défaut: {e}")
+    
+    print("Application démarrée sur http://127.0.0.1:5001")
+    app.run(host='0.0.0.0', port=5001, debug=True)

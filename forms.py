@@ -101,14 +101,27 @@ class FactureForm(FlaskForm):
     numero = StringField('Numéro de facture', validators=[DataRequired()])
     date_emission = DateField('Date d\'émission', validators=[DataRequired()], default=datetime.now)
     date_echeance = DateField('Date d\'échéance', validators=[DataRequired()], default=datetime.now() + timedelta(days=30))
-    montant_ht = FloatField('Montant HT', validators=[DataRequired()])
-    taux_tva = FloatField('Taux de TVA (%)', validators=[DataRequired()], default=20.0)
-    montant_ttc = FloatField('Montant TTC', validators=[DataRequired()])
+    
+    # Montants
+    montant_ht = FloatField('Montant TTC de la prestation', validators=[DataRequired()])
+    taux_tva = FloatField('Montant de l\'acompte', default=0)
+    montant_ttc = FloatField('Montant Commission commerciale', default=0)
+    montant_acompte = FloatField('Montant de l\'acompte', default=0)
+    
+    # Champs commission
+    commission_pourcentage = FloatField('Pourcentage de commission (%)', default=0)
+    commission_montant = FloatField('Montant de la commission (€)', default=0)
+    
+    # Champ caché pour le commercial
+    commercial_id = HiddenField('Commercial')
+    
     mode_paiement = SelectField('Mode de paiement', choices=[
-        ('Espèces', 'Espèces'),
+        ('', 'Sélectionner un mode de paiement'),
+        ('Virement', 'Virement bancaire'),
         ('Chèque', 'Chèque'),
+        ('Espèces', 'Espèces'),
         ('Carte bancaire', 'Carte bancaire'),
-        ('Virement', 'Virement')
+        ('Autre', 'Autre')
     ])
     statut = SelectField('Statut', choices=[
         ('En attente', 'En attente'),
@@ -240,3 +253,66 @@ class SearchStockageForm(FlaskForm):
     archives = BooleanField('Afficher les stockages archivés')
     submit = SubmitField('Filtrer')
     reset = SubmitField('Réinitialiser')
+
+class DocumentForm(FlaskForm):
+    """Formulaire pour l'ajout et la modification de documents"""
+    nom = StringField('Nom du document', validators=[DataRequired()])
+    fichier = FileField('Fichier', validators=[
+        FileAllowed(['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx', 'xls', 'xlsx', 'txt'], 
+                    'Formats acceptés: PDF, images, documents Office, texte')
+    ])
+    type = SelectField('Type de document', choices=[
+        ('', 'Sélectionnez un type...'),
+        ('contrat', 'Contrat'),
+        ('facture', 'Facture'),
+        ('devis', 'Devis'),
+        ('identite', 'Pièce d\'identité'),
+        ('justificatif', 'Justificatif de domicile'),
+        ('assurance', 'Attestation d\'assurance'),
+        ('photo', 'Photo'),
+        ('autre', 'Autre')
+    ])
+    categorie = SelectField('Catégorie', choices=[
+        ('', 'Sélectionnez une catégorie...'),
+        ('administratif', 'Administratif'),
+        ('financier', 'Financier'),
+        ('technique', 'Technique'),
+        ('personnel', 'Personnel'),
+        ('autre', 'Autre')
+    ])
+    tags = StringField('Tags (séparés par des virgules)')
+    notes = TextAreaField('Notes sur le document')
+    observations_supplementaires = TextAreaField('Observations supplémentaires')
+    statut = SelectField('Statut', choices=[
+        ('actif', 'Actif'),
+        ('archive', 'Archivé')
+    ], default='actif')
+    client_id = SelectField('Client', coerce=optional_int, validators=[DataRequired()])
+    submit = SubmitField('Enregistrer le document')
+
+class SearchDocumentForm(FlaskForm):
+    """Formulaire pour la recherche de documents"""
+    query = StringField('Rechercher un document (nom, type, notes...)')
+    client_id = SelectField('Client', coerce=optional_int, validators=[Optional()])
+    type = SelectField('Type', choices=[
+        ('', 'Tous les types'),
+        ('contrat', 'Contrat'),
+        ('facture', 'Facture'),
+        ('devis', 'Devis'),
+        ('identite', 'Pièce d\'identité'),
+        ('justificatif', 'Justificatif de domicile'),
+        ('assurance', 'Attestation d\'assurance'),
+        ('photo', 'Photo'),
+        ('autre', 'Autre')
+    ], validators=[Optional()])
+    categorie = SelectField('Catégorie', choices=[
+        ('', 'Toutes les catégories'),
+        ('administratif', 'Administratif'),
+        ('financier', 'Financier'),
+        ('technique', 'Technique'),
+        ('personnel', 'Personnel'),
+        ('autre', 'Autre')
+    ], validators=[Optional()])
+    date_debut = DateField('Uploadé entre', validators=[Optional()])
+    date_fin = DateField('et', validators=[Optional()])
+    submit = SubmitField('Rechercher')

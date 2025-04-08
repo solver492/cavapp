@@ -8,3 +8,4 @@ from routes.stockage import stockage_bp
 from routes.user import user_bp
 from routes.vehicule import vehicule_bp
 from routes.calendrier import calendrier_bp
+from routes.document import document_bp

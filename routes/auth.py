@@ -3,7 +3,7 @@ from flask_login import login_user, logout_user, login_required, current_user
 from urllib.parse import urlparse
 from datetime import datetime
 
-from app import db
+from extensions import db
 from models import User
 from forms import LoginForm
 

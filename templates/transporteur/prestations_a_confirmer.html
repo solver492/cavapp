@@ -55,9 +55,9 @@
                     {% for prestation in prestations %}
                     <tr>
                         <td>
-                            {% if prestation.client %}
-                            <a href="{{ url_for('client.edit', id=prestation.client.id) }}" class="text-primary">
-                                {{ prestation.client.nom }} {{ prestation.client.prenom }}
+                            {% if prestation.client_principal %}
+                            <a href="{{ url_for('client.edit', id=prestation.client_principal.id) }}" class="text-primary">
+                                {{ prestation.client_principal.nom }} {{ prestation.client_principal.prenom }}
                             </a>
                             {% else %}
                             <span class="text-muted">Client inconnu</span>

@@ -6,7 +6,7 @@ from flask import (
 )
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.utils import secure_filename
-from models import User, Client, Prestation, Facture, Document
+from models import User, Client, Prestation, Facture, Document, Transporteur, Vehicule
 from forms import (
     LoginForm, ClientForm, PrestationForm, FactureForm, UserForm,
     SearchClientForm, SearchPrestationForm, SearchFactureForm, SearchUserForm
@@ -20,10 +20,11 @@ from utils import (
 # Blueprints
 auth_bp = Blueprint('auth', __name__)
 dashboard_bp = Blueprint('dashboard', __name__)
-client_bp = Blueprint('client', __name__, url_prefix='/clients')
-prestation_bp = Blueprint('prestation', __name__, url_prefix='/prestations')
-facture_bp = Blueprint('facture', __name__, url_prefix='/factures')
-user_bp = Blueprint('user', __name__, url_prefix='/users')
+client_bp = Blueprint('client', __name__)
+prestation_bp = Blueprint('prestation', __name__)
+facture_bp = Blueprint('facture', __name__)
+user_bp = Blueprint('user', __name__)
+api_bp = Blueprint('api', __name__)
 
 # Auth routes
 @auth_bp.route('/', methods=['GET', 'POST'])
@@ -715,3 +716,98 @@ def delete(id):
     
     flash('Utilisateur supprimé avec succès.', 'success')
     return redirect(url_for('user.index'))
+
+# API routes
+@api_bp.route('/check_disponibilite', methods=['POST'])
+def check_disponibilite():
+    # Récupérer les paramètres de la requête
+    date_debut = request.form.get('date_debut')
+    date_fin = request.form.get('date_fin')
+    type_prestation = request.form.get('type_prestation')
+    prestation_id = request.form.get('prestation_id')
+    
+    # Vérification des paramètres
+    if not date_debut or not date_fin:
+        return jsonify({
+            'error': 'Les dates de début et de fin sont requises'
+        }), 400
+    
+    # Convertir les dates en objets datetime
+    try:
+        date_debut_obj = datetime.strptime(date_debut, '%Y-%m-%d')
+        date_fin_obj = datetime.strptime(date_fin, '%Y-%m-%d')
+    except ValueError:
+        return jsonify({
+            'error': 'Format de date invalide. Utilisez le format YYYY-MM-DD.'
+        }), 400
+    
+    # Requête pour trouver les transporteurs disponibles
+    # Un transporteur est disponible s'il n'a pas de prestation qui chevauche la période demandée
+    transporteurs_disponibles = Transporteur.query.filter(
+        Transporteur.statut == 'actif'
+    ).all()
+    
+    # Filtrer les transporteurs qui ont déjà des prestations durant cette période
+    transporteurs_occupes_ids = []
+    
+    prestations_periode = Prestation.query.filter(
+        Prestation.date_debut < date_fin_obj,
+        Prestation.date_fin > date_debut_obj
+    )
+    
+    # Exclure la prestation en cours d'édition
+    if prestation_id and prestation_id != 'null':
+        prestations_periode = prestations_periode.filter(Prestation.id != int(prestation_id))
+    
+    for prestation in prestations_periode.all():
+        if prestation.transporteur_id:
+            transporteurs_occupes_ids.append(prestation.transporteur_id)
+    
+    # Filtrer les transporteurs disponibles
+    transporteurs_disponibles = [t for t in transporteurs_disponibles if t.id not in transporteurs_occupes_ids]
+    
+    # Pour les transporteurs bientôt disponibles (dans les 30 jours après la date de fin demandée)
+    date_fin_plus_30 = date_fin_obj.replace(day=date_fin_obj.day + 30)
+    transporteurs_bientot_disponibles = []
+    
+    transporteurs_occupes = Transporteur.query.filter(
+        Transporteur.id.in_(transporteurs_occupes_ids),
+        Transporteur.statut == 'actif'
+    ).all()
+    
+    for transporteur in transporteurs_occupes:
+        # Trouver la prochaine date de disponibilité
+        derniere_prestation = Prestation.query.filter(
+            Prestation.transporteur_id == transporteur.id,
+            Prestation.date_fin > date_debut_obj
+        ).order_by(Prestation.date_fin.asc()).first()
+        
+        if derniere_prestation and derniere_prestation.date_fin < date_fin_plus_30:
+            transporteurs_bientot_disponibles.append({
+                'id': transporteur.id,
+                'nom': transporteur.nom,
+                'email': transporteur.email,
+                'type_vehicule': transporteur.type_vehicule,
+                'disponible_le': derniere_prestation.date_fin.strftime('%d/%m/%Y')
+            })
+    
+    # Véhicules suggérés selon le type de prestation
+    vehicules_suggeres = []
+    if type_prestation:
+        vehicules_suggeres = Vehicule.query.filter(
+            Vehicule.type_prestation_id == type_prestation,
+            Vehicule.statut == 'disponible'
+        ).all()
+    
+    # Formater les résultats
+    result = {
+        'transporteurs_disponibles': [t.to_dict() for t in transporteurs_disponibles],
+        'transporteurs_bientot_disponibles': transporteurs_bientot_disponibles,
+        'vehicules_suggeres': [v.to_dict() for v in vehicules_suggeres]
+    }
+    
+    return jsonify(result)
+
+# Fonction pour enregistrer le blueprint API dans l'application
+def register_api_routes(app):
+    app.register_blueprint(api_bp, url_prefix='/api')

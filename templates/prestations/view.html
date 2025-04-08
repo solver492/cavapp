@@ -13,6 +13,9 @@
             <a href="{{ url_for('prestation.edit', id=prestation.id) }}" class="btn btn-primary">
                 <i class="fas fa-edit"></i> Modifier
             </a>
+            <a href="{{ url_for('prestation.historique', id=prestation.id) }}" class="btn btn-info">
+                <i class="fas fa-history"></i> Historique des versions
+            </a>
         </div>
     </div>
     
@@ -80,27 +83,50 @@
         <div class="col-md-6">
             <div class="card mb-4">
                 <div class="card-header">
-                    <h5><i class="fas fa-user"></i> Client</h5>
+                    <h5><i class="fas fa-user"></i> {{ 'Clients' if clients|length > 1 else 'Client' }}</h5>
                 </div>
                 <div class="card-body">
-                    <table class="table table-details">
-                        <tr>
-                            <th>Nom</th>
-                            <td>
-                                <a href="{{ url_for('client.details', id=client.id) }}">
-                                    {{ client.nom }} {{ client.prenom }}
-                                </a>
-                            </td>
-                        </tr>
-                        <tr>
-                            <th>Email</th>
-                            <td>{{ client.email or 'Non défini' }}</td>
-                        </tr>
-                        <tr>
-                            <th>Téléphone</th>
-                            <td>{{ client.telephone or 'Non défini' }}</td>
-                        </tr>
-                    </table>
+                    {% if clients|length > 1 %}
+                        <!-- Mode Groupage: Plusieurs clients -->
+                        <div class="alert alert-info mb-3">
+                            <i class="fas fa-info-circle"></i> Prestation de groupage avec {{ clients|length }} clients
+                        </div>
+                        <div class="list-group">
+                        {% for client_item in clients %}
+                            <div class="list-group-item">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">
+                                        <a href="{{ url_for('client.details', id=client_item.id) }}">
+                                            {{ client_item.nom }} {{ client_item.prenom }}
+                                        </a>
+                                    </h6>
+                                </div>
+                                <p class="mb-1">{{ client_item.email or 'Email non défini' }}</p>
+                                <small>{{ client_item.telephone or 'Téléphone non défini' }}</small>
+                            </div>
+                        {% endfor %}
+                        </div>
+                    {% else %}
+                        <!-- Mode Standard: Un seul client -->
+                        <table class="table table-details">
+                            <tr>
+                                <th>Nom</th>
+                                <td>
+                                    <a href="{{ url_for('client.details', id=client.id) }}">
+                                        {{ client.nom }} {{ client.prenom }}
+                                    </a>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Email</th>
+                                <td>{{ client.email or 'Non défini' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Téléphone</th>
+                                <td>{{ client.telephone or 'Non défini' }}</td>
+                            </tr>
+                        </table>
+                    {% endif %}
                 </div>
             </div>
             
@@ -109,11 +135,41 @@
                     <h5><i class="fas fa-map-marker-alt"></i> Adresses</h5>
                 </div>
                 <div class="card-body">
+                    <!-- Adresse de départ principale -->
                     <h6>Adresse de départ</h6>
                     <p>{{ prestation.adresse_depart }}</p>
                     
-                    <h6>Adresse d'arrivée</h6>
+                    <!-- Étapes intermédiaires de départ -->
+                    {% if prestation.etapes_depart %}
+                    <div class="etapes-container">
+                        <h6 class="mt-3">Étapes intermédiaires (départ)</h6>
+                        <ol class="list-group list-group-numbered mt-2">
+                            {% for etape in prestation.etapes_depart.split('||') %}
+                                {% if etape.strip() %}
+                                <li class="list-group-item">{{ etape }}</li>
+                                {% endif %}
+                            {% endfor %}
+                        </ol>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Adresse d'arrivée principale -->
+                    <h6 class="mt-3">Adresse d'arrivée</h6>
                     <p>{{ prestation.adresse_arrivee }}</p>
+                    
+                    <!-- Étapes intermédiaires d'arrivée -->
+                    {% if prestation.etapes_arrivee %}
+                    <div class="etapes-container">
+                        <h6 class="mt-3">Étapes intermédiaires (arrivée)</h6>
+                        <ol class="list-group list-group-numbered mt-2">
+                            {% for etape in prestation.etapes_arrivee.split('||') %}
+                                {% if etape.strip() %}
+                                <li class="list-group-item">{{ etape }}</li>
+                                {% endif %}
+                            {% endfor %}
+                        </ol>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>

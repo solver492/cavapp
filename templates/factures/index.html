@@ -93,6 +93,9 @@
                                         <a href="{{ url_for('facture.edit', id=facture.id) }}" class="btn btn-outline-primary" title="Modifier">
                                             <i class="fas fa-edit"></i>
                                         </a>
+                                        <a href="{{ url_for('facture.view', id=facture.id) }}#documents" class="btn btn-outline-success" title="Documents de facturation">
+                                            <i class="fas fa-file-pdf"></i>
+                                        </a>
                                         {% if current_user.is_admin() %}
                                             <a href="{{ url_for('facture.delete', id=facture.id) }}" 
                                                class="btn btn-outline-danger delete-facture" 
