@@ -492,9 +492,24 @@ document.addEventListener('DOMContentLoaded', function() {
         calendarContainer.appendChild(calendarBody);
         calendarContainer.appendChild(legend);
         
-        // Insérer dans le DOM
-        const container = document.querySelector('.transporteurs');
-        container.appendChild(calendarContainer);
+        // Insérer dans le DOM - utiliser un sélecteur plus robuste
+        const container = document.querySelector('.transporteurs, .widget-transport-module, .transporteur-widget-container');
+        
+        // Si aucun conteneur spécifique n'est trouvé, utiliser le body comme fallback
+        if (container) {
+            container.appendChild(calendarContainer);
+        } else {
+            console.log('Conteneur des transporteurs non trouvé, utilisation du body comme fallback');
+            document.body.appendChild(calendarContainer);
+            // Ajuster le style pour un affichage modal au centre de l'écran
+            calendarContainer.style.position = 'fixed';
+            calendarContainer.style.top = '50%';
+            calendarContainer.style.left = '50%';
+            calendarContainer.style.transform = 'translate(-50%, -50%)';
+            calendarContainer.style.zIndex = '1050';
+            calendarContainer.style.maxHeight = '90vh';
+            calendarContainer.style.overflowY = 'auto';
+        }
         
         return calendarContainer;
     }

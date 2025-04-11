@@ -63,8 +63,11 @@ def create_app():
         from routes.vehicule import vehicule_bp
         from routes.calendrier import calendrier_bp
         from routes.transporteur import transporteur_bp
+        from routes.transporteur_api import transporteur_api_bp
+        from routes.transporteur_prestations import transporteur_prestations
         from routes.api import api_bp
         from routes.document import document_bp, documents_bp
+        from routes.api_transporteurs import api_transporteurs
         from healthcheck import healthcheck as healthcheck_blueprint
         
         # Blueprint enregistrement avec préfixes cohérents
@@ -77,10 +80,13 @@ def create_app():
         app.register_blueprint(user_bp, url_prefix='/utilisateurs')
         app.register_blueprint(vehicule_bp, url_prefix='/vehicules')
         app.register_blueprint(transporteur_bp, url_prefix='/transporteurs')
+        app.register_blueprint(transporteur_prestations, url_prefix='/transporteur')
         app.register_blueprint(calendrier_bp, url_prefix='/calendrier')
         app.register_blueprint(document_bp, url_prefix='/documents')
         app.register_blueprint(documents_bp)  # Déjà préfixé avec /documents dans sa définition
         app.register_blueprint(api_bp, url_prefix='/api')
+        app.register_blueprint(transporteur_api_bp)  # Déjà préfixé avec /api/transporteurs dans sa définition
+        app.register_blueprint(api_transporteurs)
         app.register_blueprint(healthcheck_blueprint)
         
         # Ajouter un gestionnaire d'erreur personnalisé pour les erreurs 404

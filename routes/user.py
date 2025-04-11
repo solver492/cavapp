@@ -88,6 +88,14 @@ def index():
         role_counts=role_counts
     )
 
+@user_bp.route('/users/liste')
+@login_required
+@role_required('admin', 'super_admin')
+def liste():
+    # Récupérer tous les utilisateurs triés par rôle
+    users = User.query.filter(User.role.in_(['commercial', 'transporteur'])).order_by(User.role, User.nom).all()
+    return render_template('users/liste.html', users=users)
+
 @user_bp.route('/users/add', methods=['GET', 'POST'])
 @login_required
 @role_required('admin', 'super_admin')

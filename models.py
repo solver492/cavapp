@@ -4,10 +4,15 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from extensions import db
 
 # Association tables
+# Table d'association simple pour la compatibilité avec le code existant
 prestation_transporteurs = db.Table('prestation_transporteurs',
     db.Column('prestation_id', db.Integer, db.ForeignKey('prestation.id'), primary_key=True),
-    db.Column('user_id', db.Integer, db.ForeignKey('user.id'), primary_key=True)
+    db.Column('user_id', db.Integer, db.ForeignKey('user.id'), primary_key=True),
+    db.Column('statut', db.String(20), default='en_attente'),  # en_attente, accepte, refuse
+    db.Column('date_reponse', db.DateTime, nullable=True),
+    db.Column('commentaire', db.Text, nullable=True)
 )
+
 
 # Association table pour les prestations et les clients supplémentaires (pour mode groupage)
 prestation_clients = db.Table('prestation_clients',
@@ -246,6 +251,11 @@ class Prestation(db.Model):
     
     def __repr__(self):
         return f"Prestation {self.id} - {self.client_principal.nom} {self.client_principal.prenom}"
+        
+    @property
+    def est_groupage(self):
+        """Retourne True si la prestation est de type groupage, False sinon"""
+        return self.mode_groupage or self.type_demenagement == 'Groupage'
 
 # Nouvelle table pour stocker les versions des prestations
 class PrestationVersion(db.Model):
@@ -369,6 +379,7 @@ class Notification(db.Model):
     type = db.Column(db.String(50), nullable=False, default='info')  # info, success, warning, danger
     date_creation = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     lu = db.Column(db.Boolean, default=False)
+    statut = db.Column(db.String(50), nullable=False, default='non_lue')  # non_lue, lue, acceptee, refusee
     role_destinataire = db.Column(db.String(50), nullable=False)  # admin, commercial, transporteur
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)  # Si destiné à un utilisateur spécifique
     prestation_id = db.Column(db.Integer, db.ForeignKey('prestation.id'), nullable=True)
@@ -388,6 +399,7 @@ class Notification(db.Model):
             'type': self.type,
             'date_creation': self.date_creation.strftime('%d/%m/%Y %H:%M'),
             'lu': self.lu,
+            'statut': self.statut,
             'role_destinataire': self.role_destinataire,
             'prestation_id': self.prestation_id,
             'stockage_id': self.stockage_id

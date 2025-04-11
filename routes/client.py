@@ -1,7 +1,9 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, send_file
+from flask import Blueprint, render_template, redirect, url_for, request, flash, current_app
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 import os
+from datetime import datetime
 
 from extensions import db
 from models import Client, Document
@@ -10,6 +12,13 @@ from utils import allowed_file, save_document
 from config import Config
 
 client_bp = Blueprint('client', __name__)
+
+@client_bp.route('/clients/liste')
+@login_required
+def liste():
+    # Récupérer tous les clients
+    clients = Client.query.order_by(Client.date_creation.desc()).all()
+    return render_template('clients/liste.html', clients=clients)
 
 @client_bp.route('/clients')
 @login_required
@@ -79,17 +88,27 @@ def add():
         # Handle document upload if provided
         if form.documents.data:
             file = form.documents.data
-            if file and allowed_file(file.filename):
-                doc_path = save_document(file, client.id)
-                if doc_path:
-                    document = Document(
-                        nom=secure_filename(file.filename),
-                        chemin=doc_path,
-                        type='client',
-                        client_id=client.id
-                    )
-                    db.session.add(document)
-                    db.session.commit()
+            if file and hasattr(file, 'filename') and file.filename:
+                print(f"Tentative d'upload du fichier: {file.filename}")
+                if allowed_file(file.filename):
+                    doc_path = save_document(file, client.id)
+                    if doc_path:
+                        document = Document(
+                            nom=secure_filename(file.filename),
+                            chemin=doc_path,
+                            type='client',
+                            format=file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else '',
+                            taille=os.path.getsize(doc_path) if os.path.exists(doc_path) else 0,
+                            date_upload=datetime.utcnow(),
+                            client_id=client.id
+                        )
+                        db.session.add(document)
+                        db.session.commit()
+                        flash(f'Document "{file.filename}" ajouté avec succès!', 'success')
+                    else:
+                        flash(f'Erreur lors de la sauvegarde du document "{file.filename}".', 'danger')
+                else:
+                    flash(f'Type de fichier non autorisé pour "{file.filename}".', 'warning')
         
         flash('Client ajouté avec succès!', 'success')
         return redirect(url_for('client.index'))
@@ -122,18 +141,56 @@ def edit(id):
         
         # Handle document upload if provided
         if form.documents.data:
-            file = form.documents.data
-            if file and allowed_file(file.filename):
-                doc_path = save_document(file, client.id)
-                if doc_path:
-                    document = Document(
-                        nom=secure_filename(file.filename),
-                        chemin=doc_path,
-                        type='client',
-                        client_id=client.id
-                    )
-                    db.session.add(document)
-                    db.session.commit()
+            # Vérifier si c'est une liste ou un objet fichier unique
+            if isinstance(form.documents.data, list):
+                # Traiter chaque fichier dans la liste
+                for file in form.documents.data:
+                    if file and hasattr(file, 'filename') and file.filename:
+                        print(f"Tentative d'upload du fichier (liste): {file.filename}")
+                        if allowed_file(file.filename):
+                            doc_path = save_document(file, client.id)
+                            if doc_path:
+                                document = Document(
+                                    nom=secure_filename(file.filename),
+                                    chemin=doc_path,
+                                    type='client',
+                                    format=file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else '',
+                                    taille=os.path.getsize(doc_path) if os.path.exists(doc_path) else 0,
+                                    date_upload=datetime.utcnow(),
+                                    client_id=client.id
+                                )
+                                db.session.add(document)
+                                flash(f'Document "{file.filename}" ajouté avec succès!', 'success')
+                            else:
+                                flash(f'Erreur lors de la sauvegarde du document "{file.filename}".', 'danger')
+                        else:
+                            flash(f'Type de fichier non autorisé pour "{file.filename}".', 'warning')
+            else:
+                # Traiter comme un fichier unique
+                file = form.documents.data
+                if file and hasattr(file, 'filename') and file.filename:
+                    print(f"Tentative d'upload du fichier (unique): {file.filename}")
+                    if allowed_file(file.filename):
+                        doc_path = save_document(file, client.id)
+                        if doc_path:
+                            document = Document(
+                                nom=secure_filename(file.filename),
+                                chemin=doc_path,
+                                type='client',
+                                format=file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else '',
+                                taille=os.path.getsize(doc_path) if os.path.exists(doc_path) else 0,
+                                date_upload=datetime.utcnow(),
+                                client_id=client.id
+                            )
+                            db.session.add(document)
+                            flash(f'Document "{file.filename}" ajouté avec succès!', 'success')
+                        else:
+                            flash(f'Erreur lors de la sauvegarde du document "{file.filename}".', 'danger')
+                    else:
+                        flash(f'Type de fichier non autorisé pour "{file.filename}".', 'warning')
+            
+            # Commit après avoir ajouté tous les documents
+            db.session.commit()
         
         flash('Client mis à jour avec succès!', 'success')
         return redirect(url_for('client.index'))

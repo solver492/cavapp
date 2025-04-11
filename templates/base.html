@@ -28,10 +28,11 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/custom-calendar.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/navbar-logos.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/whatsapp-buttons.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/quick-access-bubble.css') }}">
     
     {% block extra_css %}{% endblock %}
 </head>
-<body>
+<body {% if current_user.is_authenticated %}data-user-role="{{ current_user.role }}"{% endif %}>
     {% if current_user.is_authenticated %}
         <header>
             <div class="app-header">
@@ -198,11 +199,20 @@
     <!-- Custom JS -->
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     
+    <!-- Script pour supprimer les bulles non désirées -->
+    <script src="{{ url_for('static', filename='js/supprimer-bulles.js') }}"></script>
+    
     <!-- WhatsApp Integration (Version corrigée) -->
     <script src="{{ url_for('static', filename='js/whatsapp-fixed-new.js') }}"></script>
     
     <!-- Script de débogage pour identifier les erreurs JavaScript -->
     <script src="{{ url_for('static', filename='js/error-handler.js') }}"></script>
+    
+    <!-- Script pour gérer la bulle des transporteurs -->
+    <script src="{{ url_for('static', filename='js/gerer-bulle-transporteurs.js') }}"></script>
+    
+    <!-- Script pour charger les transporteurs -->
+    <script src="{{ url_for('static', filename='js/charger-transporteurs.js') }}"></script>
     
     {% block page_scripts %}{% endblock %}
 </body>

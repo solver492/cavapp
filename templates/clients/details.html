@@ -265,45 +265,75 @@
 
 {% block page_scripts %}
 <script>
-    // Gestion de la confirmation de suppression
     document.addEventListener('DOMContentLoaded', function() {
-        const deleteButtons = document.querySelectorAll('.delete-client');
+        // Désactiver l'intégration WhatsApp globale sur cette page
+        document.body.classList.add('disable-global-whatsapp');
         
-        deleteButtons.forEach(function(button) {
-            button.addEventListener('click', function(e) {
-                e.preventDefault();
-                const clientName = this.getAttribute('data-client-name');
-                
-                if(confirm(`Êtes-vous sûr de vouloir supprimer le client "${clientName}" ? Cette action est irréversible.`)) {
-                    window.location.href = this.getAttribute('href');
-                }
-            });
+        // Supprimer tous les boutons WhatsApp existants
+        document.querySelectorAll('.whatsapp-btn').forEach(btn => {
+            if (!btn.classList.contains('client-phone-whatsapp')) {
+                btn.remove();
+            }
         });
         
-        // Ajout du bouton WhatsApp pour le téléphone
+        // Variable pour suivre si le bouton a été ajouté avec succès
+        let boutonAjoute = false;
+        
+        // Fonction pour ajouter un seul bouton WhatsApp à côté du numéro de téléphone
         function ajouterBoutonWhatsApp() {
-            // Trouver précisément la cellule du téléphone
-            const thTelephone = Array.from(document.querySelectorAll('th')).find(th => 
-                th.textContent.includes('Téléphone'));
+            console.log("Ajout du bouton WhatsApp...");
             
-            if (thTelephone) {
-                // Trouver la cellule adjacente qui contient le numéro
-                const tdTelephone = thTelephone.nextElementSibling || thTelephone.parentNode.querySelector('td');
+            // Si le bouton a déjà été ajouté avec succès, ne rien faire
+            if (boutonAjoute && document.querySelector('.client-phone-whatsapp')) {
+                console.log("Bouton WhatsApp déjà ajouté avec succès");
+                return;
+            }
+            
+            // Trouver la cellule contenant le numéro de téléphone
+            const thTelephone = Array.from(document.querySelectorAll('th')).find(th => 
+                th.textContent.trim() === 'Téléphone:');
                 
-                if (tdTelephone && tdTelephone.textContent.trim().length > 3) {
-                    // Vérifier si un bouton existe déjà
-                    if (!tdTelephone.querySelector('.whatsapp-btn')) {
+            if (thTelephone) {
+                console.log("Cellule téléphone trouvée:", thTelephone);
+                const tdTelephone = thTelephone.nextElementSibling;
+                
+                if (tdTelephone) {
+                    console.log("Cellule de valeur trouvée:", tdTelephone.textContent);
+                    
+                    // Vérifier si le bouton existe déjà
+                    if (tdTelephone.querySelector('.client-phone-whatsapp')) {
+                        console.log("Bouton WhatsApp déjà présent, pas besoin de l'ajouter à nouveau");
+                        boutonAjoute = true;
+                        return;
+                    }
+                    
+                    // Récupérer le numéro de téléphone original
+                    const numeroText = tdTelephone.textContent.trim();
+                    console.log("Texte trouvé:", numeroText);
+                    
+                    // Extraire le numéro avec une regex
+                    const numeroMatch = numeroText.match(/(\d[\d\s\-\+\.]+\d)/);
+                    const numero = numeroMatch ? numeroMatch[1] : numeroText;
+                    
+                    console.log("Numéro extrait:", numero);
+                    
+                    // Vérifier si le numéro est valide
+                    if (numero && numero.length > 5) {
                         // Formater le numéro pour WhatsApp
-                        let numero = tdTelephone.textContent.trim();
                         let numeroWhatsApp = numero.replace(/\D/g, '');
+                        
+                        // Si le numéro commence par un 0, le remplacer par 33
                         if (numeroWhatsApp.startsWith('0')) {
                             numeroWhatsApp = '33' + numeroWhatsApp.substring(1);
                         }
                         
+                        console.log("Numéro formaté pour WhatsApp:", numeroWhatsApp);
+                        
                         // Créer le bouton WhatsApp
                         const whatsappBtn = document.createElement('a');
                         whatsappBtn.href = 'https://wa.me/' + numeroWhatsApp;
-                        whatsappBtn.className = 'whatsapp-btn';
+                        whatsappBtn.className = 'whatsapp-btn client-phone-whatsapp';
+                        whatsappBtn.setAttribute('data-permanent', 'true');
                         whatsappBtn.target = '_blank';
                         whatsappBtn.innerHTML = '<i class="fab fa-whatsapp"></i>';
                         whatsappBtn.title = 'Contacter par WhatsApp';
@@ -321,6 +351,8 @@
                         whatsappBtn.style.textDecoration = 'none';
                         whatsappBtn.style.boxShadow = '0 2px 5px rgba(0,0,0,0.1)';
                         whatsappBtn.style.transition = 'transform 0.3s ease';
+                        whatsappBtn.style.zIndex = '1000';
+                        whatsappBtn.style.position = 'relative';
                         
                         // Effet de survol
                         whatsappBtn.onmouseover = function() {
@@ -336,6 +368,9 @@
                         const container = document.createElement('div');
                         container.style.display = 'flex';
                         container.style.alignItems = 'center';
+                        container.className = 'telephone-container';
+                        container.style.position = 'relative';
+                        container.style.zIndex = '999';
                         
                         // Ajouter le numéro original et le bouton au conteneur
                         container.appendChild(document.createTextNode(numero));
@@ -346,32 +381,96 @@
                         tdTelephone.appendChild(container);
                         
                         console.log('Bouton WhatsApp ajouté avec succès!');
+                        boutonAjoute = true;
+                    } else {
+                        console.log("Numéro de téléphone non valide ou trop court");
                     }
+                } else {
+                    console.log("Cellule de valeur non trouvée");
                 }
-            }
-            
-            // S'assurer qu'aucun bouton n'apparaisse dans la cellule du code postal
-            const thCodePostal = Array.from(document.querySelectorAll('th')).find(th => 
-                th.textContent.includes('Code postal'));
-                
-            if (thCodePostal) {
-                const tdCodePostal = thCodePostal.nextElementSibling || thCodePostal.parentNode.querySelector('td');
-                if (tdCodePostal) {
-                    const whatsappBtn = tdCodePostal.querySelector('.whatsapp-btn');
-                    if (whatsappBtn) {
-                        whatsappBtn.remove();
-                    }
-                }
+            } else {
+                console.log("Cellule téléphone non trouvée");
             }
         }
         
-        // Exécuter immédiatement et après un court délai
+        // Exécuter immédiatement
         ajouterBoutonWhatsApp();
+        
+        // Exécuter après un court délai pour s'assurer que le DOM est complètement chargé
         setTimeout(ajouterBoutonWhatsApp, 500);
+        
+        // Réessayer après un délai plus long au cas où
+        setTimeout(ajouterBoutonWhatsApp, 1500);
+        
+        // Réessayer toutes les 2 secondes pendant 10 secondes
+        for (let i = 1; i <= 5; i++) {
+            setTimeout(ajouterBoutonWhatsApp, i * 2000);
+        }
+        
+        // Configurer un MutationObserver pour surveiller les changements dans le DOM
+        const observer = new MutationObserver(function(mutations) {
+            // Si le bouton a été supprimé, le réajouter
+            if (!document.querySelector('.client-phone-whatsapp')) {
+                console.log("Bouton WhatsApp supprimé, réapplication...");
+                ajouterBoutonWhatsApp();
+            }
+        });
+        
+        // Observer le corps du document pour détecter les changements
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true,
+            attributes: false,
+            characterData: false
+        });
+        
+        // Ajouter un gestionnaire d'événements pour la confirmation de suppression
+        const deleteButtons = document.querySelectorAll('.delete-client');
+        deleteButtons.forEach(function(button) {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                const clientName = this.getAttribute('data-client-name');
+                
+                if(confirm(`Êtes-vous sûr de vouloir supprimer le client "${clientName}" ? Cette action est irréversible.`)) {
+                    window.location.href = this.getAttribute('href');
+                }
+            });
+        });
     });
 </script>
 
 <style>
+    /* Désactiver l'intégration WhatsApp globale sur cette page */
+    .disable-global-whatsapp .whatsapp-btn:not(.client-phone-whatsapp) {
+        display: none !important;
+    }
+    
+    /* S'assurer que le bouton WhatsApp du client est toujours visible */
+    .client-phone-whatsapp {
+        display: inline-flex !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+        position: relative !important;
+        z-index: 1000 !important;
+    }
+    
+    /* Empêcher les autres scripts de masquer le bouton */
+    .client-phone-whatsapp[data-permanent="true"] {
+        opacity: 1 !important;
+        visibility: visible !important;
+        position: relative !important;
+        z-index: 1000 !important;
+        pointer-events: auto !important;
+    }
+    
+    /* Conteneur du téléphone et du bouton */
+    .telephone-container {
+        display: flex !important;
+        align-items: center !important;
+        position: relative !important;
+        z-index: 999 !important;
+    }
+    
     .document-list {
         list-style: none;
         padding: 0;

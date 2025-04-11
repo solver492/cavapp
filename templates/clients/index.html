@@ -6,9 +6,14 @@
 <div class="client-page">
     <div class="page-title">
         <h1><i class="fas fa-users"></i> Gestion des clients</h1>
-        <a href="{{ url_for('client.add') }}" class="btn btn-primary">
-            <i class="fas fa-plus"></i> Nouveau client
-        </a>
+        <div>
+            <a href="{{ url_for('client.liste') }}" class="btn btn-info me-2">
+                <i class="fas fa-th-large"></i> Vue Avancée
+            </a>
+            <a href="{{ url_for('client.add') }}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Nouveau client
+            </a>
+        </div>
     </div>
     
     <div class="card">
@@ -67,7 +72,7 @@
                                         <a href="{{ url_for('client.details', id=client.id) }}" class="btn btn-outline-info" title="Fiche client">
                                             <i class="fas fa-id-card"></i>
                                         </a>
-                                        <a href="{{ url_for('document.client_documents', client_id=client.id) }}" class="btn btn-outline-secondary" title="Documents">
+                                        <a href="{{ url_for('documents.client_documents', client_id=client.id) }}" class="btn btn-outline-secondary" title="Documents">
                                             <i class="fas fa-file-alt"></i>
                                         </a>
                                         <a href="{{ url_for('client.edit', id=client.id) }}" class="btn btn-outline-primary" title="Modifier">

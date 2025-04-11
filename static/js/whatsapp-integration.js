@@ -6,6 +6,11 @@ document.addEventListener('DOMContentLoaded', function() {
     'use strict';
     console.log('Chargement de l\'intégration WhatsApp...');
     
+    // Vérifier si l'intégration WhatsApp est désactivée sur cette page
+    function isWhatsAppDisabled() {
+        return document.body.classList.contains('disable-global-whatsapp');
+    }
+    
     // Fonction pour vérifier si une chaîne ressemble à un numéro de téléphone
     function isPhoneNumber(text) {
         // Doit contenir au moins 8 chiffres et pas plus de 15 chiffres
@@ -93,6 +98,12 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Fonction pour ajouter des boutons WhatsApp à tous les numéros de téléphone
     function addWhatsAppButtons() {
+        // Si l'intégration WhatsApp est désactivée sur cette page, ne rien faire
+        if (isWhatsAppDisabled()) {
+            console.log('Intégration WhatsApp globale désactivée sur cette page');
+            return;
+        }
+        
         // 1. Rechercher tous les éléments qui contiennent des numéros de téléphone
         
         // Cas 1: Éléments avec l'attribut data-phone

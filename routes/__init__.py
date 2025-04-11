@@ -9,3 +9,4 @@ from routes.user import user_bp
 from routes.vehicule import vehicule_bp
 from routes.calendrier import calendrier_bp
 from routes.document import document_bp
+from routes.transporteur_api import transporteur_api_bp

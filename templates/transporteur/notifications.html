@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+
+{% block title %}Mes Notifications{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <h1 class="h3 mb-4"><i class="fas fa-bell me-2"></i>Mes Notifications</h1>
+    
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Notifications</h5>
+            <span class="badge bg-light text-dark">{{ notifications|length }}</span>
+        </div>
+        <div class="card-body">
+            {% if notifications %}
+                <div class="list-group">
+                    {% for notification in notifications %}
+                        <div class="list-group-item list-group-item-action {% if notification.statut == 'non_lue' %}list-group-item-primary{% endif %} d-flex justify-content-between align-items-start">
+                            <div class="ms-2 me-auto">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h5 class="mb-1">
+                                        {% if notification.type == 'info' %}
+                                            <i class="fas fa-info-circle text-info me-2"></i>
+                                        {% elif notification.type == 'success' %}
+                                            <i class="fas fa-check-circle text-success me-2"></i>
+                                        {% elif notification.type == 'warning' %}
+                                            <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                                        {% elif notification.type == 'danger' %}
+                                            <i class="fas fa-times-circle text-danger me-2"></i>
+                                        {% endif %}
+                                        Notification
+                                    </h5>
+                                    <small class="text-muted">{{ notification.date_creation.strftime('%d/%m/%Y %H:%M') }}</small>
+                                </div>
+                                <p class="mb-1">{{ notification.message|nl2br }}</p>
+                                {% if notification.prestation_id %}
+                                    <a href="{{ url_for('prestation.view', id=notification.prestation_id) }}" class="btn btn-sm btn-outline-primary mt-2">
+                                        <i class="fas fa-eye"></i> Voir la prestation
+                                    </a>
+                                {% endif %}
+                            </div>
+                            <span class="badge rounded-pill {% if notification.statut == 'acceptee' %}bg-success{% elif notification.statut == 'refusee' %}bg-danger{% elif notification.statut == 'non_lue' %}bg-primary{% else %}bg-secondary{% endif %}">
+                                {% if notification.statut == 'acceptee' %}
+                                    Acceptée
+                                {% elif notification.statut == 'refusee' %}
+                                    Refusée
+                                {% elif notification.statut == 'non_lue' %}
+                                    Non lue
+                                {% else %}
+                                    Lue
+                                {% endif %}
+                            </span>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i> Vous n'avez aucune notification pour le moment.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Marquer toutes les notifications comme lues
+    const notificationItems = document.querySelectorAll('.list-group-item-primary');
+    
+    if (notificationItems.length > 0) {
+        setTimeout(() => {
+            notificationItems.forEach(item => {
+                item.classList.remove('list-group-item-primary');
+            });
+        }, 5000); // Attendre 5 secondes avant de changer visuellement le statut
+    }
+});
+</script>
+{% endblock %}

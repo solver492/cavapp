@@ -287,7 +287,8 @@ class DocumentForm(FlaskForm):
         ('actif', 'Actif'),
         ('archive', 'Archivé')
     ], default='actif')
-    client_id = SelectField('Client', coerce=optional_int, validators=[DataRequired()])
+    # Utiliser str comme coerce pour éviter les problèmes de validation
+    client_id = SelectField('Client', coerce=str, validators=[DataRequired()])
     submit = SubmitField('Enregistrer le document')
 
 class SearchDocumentForm(FlaskForm):

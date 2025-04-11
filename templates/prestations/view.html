@@ -82,27 +82,38 @@
         <!-- Client et adresses -->
         <div class="col-md-6">
             <div class="card mb-4">
-                <div class="card-header">
-                    <h5><i class="fas fa-user"></i> {{ 'Clients' if clients|length > 1 else 'Client' }}</h5>
+                <div class="card-header bg-primary text-white">
+                    <h5>
+                        <i class="fas fa-user"></i> {{ 'Clients' if clients|length > 1 else 'Client' }}
+                        {% if clients|length > 1 %}
+                            <span class="badge bg-warning ms-2">{{ clients|length }}</span>
+                        {% endif %}
+                    </h5>
                 </div>
                 <div class="card-body">
                     {% if clients|length > 1 %}
                         <!-- Mode Groupage: Plusieurs clients -->
                         <div class="alert alert-info mb-3">
-                            <i class="fas fa-info-circle"></i> Prestation de groupage avec {{ clients|length }} clients
+                            <i class="fas fa-info-circle"></i> <strong>Prestation de groupage</strong> avec <strong>{{ clients|length }} clients</strong>
                         </div>
                         <div class="list-group">
                         {% for client_item in clients %}
                             <div class="list-group-item">
                                 <div class="d-flex w-100 justify-content-between">
                                     <h6 class="mb-1">
+                                        <i class="fas fa-user-circle me-2"></i>
                                         <a href="{{ url_for('client.details', id=client_item.id) }}">
                                             {{ client_item.nom }} {{ client_item.prenom }}
                                         </a>
+                                        {% if loop.index == 1 %}
+                                            <span class="badge bg-primary ms-2">Principal</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary ms-2">Supplémentaire #{{ loop.index - 1 }}</span>
+                                        {% endif %}
                                     </h6>
                                 </div>
-                                <p class="mb-1">{{ client_item.email or 'Email non défini' }}</p>
-                                <small>{{ client_item.telephone or 'Téléphone non défini' }}</small>
+                                <p class="mb-1"><i class="fas fa-envelope me-2"></i>{{ client_item.email or 'Email non défini' }}</p>
+                                <small><i class="fas fa-phone me-2"></i>{{ client_item.telephone or 'Téléphone non défini' }}</small>
                             </div>
                         {% endfor %}
                         </div>
@@ -131,43 +142,79 @@
             </div>
             
             <div class="card mb-4">
-                <div class="card-header">
-                    <h5><i class="fas fa-map-marker-alt"></i> Adresses</h5>
+                <div class="card-header bg-success text-white">
+                    <h5>
+                        <i class="fas fa-map-marker-alt"></i> Adresses
+                        {% set total_etapes = (prestation.etapes_depart.split('||')|length if prestation.etapes_depart else 0) + (prestation.etapes_arrivee.split('||')|length if prestation.etapes_arrivee else 0) %}
+                        {% if total_etapes > 0 %}
+                            <span class="badge bg-warning ms-2">{{ total_etapes + 2 }} arrêts</span>
+                        {% endif %}
+                    </h5>
                 </div>
                 <div class="card-body">
                     <!-- Adresse de départ principale -->
-                    <h6>Adresse de départ</h6>
-                    <p>{{ prestation.adresse_depart }}</p>
+                    <div class="card mb-3 border-success">
+                        <div class="card-header bg-success text-white">
+                            <h6 class="mb-0"><i class="fas fa-flag-checkered"></i> Point de départ</h6>
+                        </div>
+                        <div class="card-body">
+                            <p class="mb-0"><i class="fas fa-map-marker-alt me-2"></i>{{ prestation.adresse_depart }}</p>
+                        </div>
+                    </div>
                     
                     <!-- Étapes intermédiaires de départ -->
                     {% if prestation.etapes_depart %}
-                    <div class="etapes-container">
-                        <h6 class="mt-3">Étapes intermédiaires (départ)</h6>
-                        <ol class="list-group list-group-numbered mt-2">
-                            {% for etape in prestation.etapes_depart.split('||') %}
-                                {% if etape.strip() %}
-                                <li class="list-group-item">{{ etape }}</li>
-                                {% endif %}
-                            {% endfor %}
-                        </ol>
+                    <div class="etapes-container mb-3">
+                        <div class="card border-info">
+                            <div class="card-header bg-info text-white">
+                                <h6 class="mb-0"><i class="fas fa-route"></i> Étapes intermédiaires (départ) <span class="badge bg-light text-dark">{{ prestation.etapes_depart.split('||')|length }}</span></h6>
+                            </div>
+                            <div class="card-body p-0">
+                                <ol class="list-group list-group-numbered mb-0">
+                                    {% for etape in prestation.etapes_depart.split('||') %}
+                                        {% if etape.strip() %}
+                                        <li class="list-group-item d-flex align-items-center">
+                                            <i class="fas fa-map-pin me-2 text-info"></i>
+                                            <span>{{ etape }}</span>
+                                        </li>
+                                        {% endif %}
+                                    {% endfor %}
+                                </ol>
+                            </div>
+                        </div>
                     </div>
                     {% endif %}
                     
                     <!-- Adresse d'arrivée principale -->
-                    <h6 class="mt-3">Adresse d'arrivée</h6>
-                    <p>{{ prestation.adresse_arrivee }}</p>
+                    <div class="card mb-3 border-danger">
+                        <div class="card-header bg-danger text-white">
+                            <h6 class="mb-0"><i class="fas fa-flag"></i> Point d'arrivée</h6>
+                        </div>
+                        <div class="card-body">
+                            <p class="mb-0"><i class="fas fa-map-marker-alt me-2"></i>{{ prestation.adresse_arrivee }}</p>
+                        </div>
+                    </div>
                     
                     <!-- Étapes intermédiaires d'arrivée -->
                     {% if prestation.etapes_arrivee %}
                     <div class="etapes-container">
-                        <h6 class="mt-3">Étapes intermédiaires (arrivée)</h6>
-                        <ol class="list-group list-group-numbered mt-2">
-                            {% for etape in prestation.etapes_arrivee.split('||') %}
-                                {% if etape.strip() %}
-                                <li class="list-group-item">{{ etape }}</li>
-                                {% endif %}
-                            {% endfor %}
-                        </ol>
+                        <div class="card border-info">
+                            <div class="card-header bg-info text-white">
+                                <h6 class="mb-0"><i class="fas fa-route"></i> Étapes intermédiaires (arrivée) <span class="badge bg-light text-dark">{{ prestation.etapes_arrivee.split('||')|length }}</span></h6>
+                            </div>
+                            <div class="card-body p-0">
+                                <ol class="list-group list-group-numbered mb-0">
+                                    {% for etape in prestation.etapes_arrivee.split('||') %}
+                                        {% if etape.strip() %}
+                                        <li class="list-group-item d-flex align-items-center">
+                                            <i class="fas fa-map-pin me-2 text-info"></i>
+                                            <span>{{ etape }}</span>
+                                        </li>
+                                        {% endif %}
+                                    {% endfor %}
+                                </ol>
+                            </div>
+                        </div>
                     </div>
                     {% endif %}
                 </div>
@@ -179,24 +226,75 @@
         <!-- Transporteurs -->
         <div class="col-md-6">
             <div class="card mb-4">
-                <div class="card-header">
-                    <h5><i class="fas fa-truck"></i> Transporteurs assignés</h5>
+                <div class="card-header bg-secondary text-white">
+                    <h5>
+                        <i class="fas fa-truck"></i> Transporteurs assignés
+                        {% if transporteurs %}
+                            <span class="badge bg-warning ms-2">{{ transporteurs|length }}</span>
+                        {% endif %}
+                    </h5>
                 </div>
                 <div class="card-body">
                     {% if transporteurs %}
-                        <ul class="list-group">
+                        <div class="alert alert-info mb-3">
+                            <i class="fas fa-info-circle"></i> <strong>{{ transporteurs|length }}</strong> chauffeur{% if transporteurs|length > 1 %}s{% endif %} assigné{% if transporteurs|length > 1 %}s{% endif %} à cette prestation
+                        </div>
+                        <div class="row">
                             {% for transporteur in transporteurs %}
-                                <li class="list-group-item">
-                                    <i class="fas fa-user"></i> {{ transporteur.nom }} {{ transporteur.prenom }}
-                                    {% if transporteur.vehicule %}
-                                        <span class="badge bg-info">{{ transporteur.vehicule }}</span>
-                                    {% endif %}
-                                </li>
+                                <div class="col-md-6 mb-3">
+                                    <div class="card h-100 border-secondary">
+                                        <div class="card-header bg-light">
+                                            <h6 class="mb-0">
+                                                <i class="fas fa-user-tie me-2"></i>
+                                                {{ transporteur.nom }} {{ transporteur.prenom }}
+                                            </h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <p class="mb-2">
+                                                <i class="fas fa-id-badge me-2"></i>
+                                                <strong>ID:</strong> {{ transporteur.id }}
+                                            </p>
+                                            {% if transporteur.email %}
+                                            <p class="mb-2">
+                                                <i class="fas fa-envelope me-2"></i>
+                                                <strong>Email:</strong> {{ transporteur.email }}
+                                            </p>
+                                            {% endif %}
+                                            {% if transporteur.telephone %}
+                                            <p class="mb-2">
+                                                <i class="fas fa-phone me-2"></i>
+                                                <strong>Téléphone:</strong> {{ transporteur.telephone }}
+                                            </p>
+                                            {% endif %}
+                                            {% if transporteur.vehicule %}
+                                            <p class="mb-0">
+                                                <i class="fas fa-truck me-2"></i>
+                                                <strong>Véhicule:</strong> 
+                                                <span class="badge bg-info">{{ transporteur.vehicule }}</span>
+                                            </p>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
                             {% endfor %}
-                        </ul>
+                        </div>
+                        
+                        <!-- Bouton de validation des transporteurs -->
+                        <div class="mt-3 text-center">
+                            <button type="button" id="valider-transporteurs" class="btn btn-success">
+                                <i class="fas fa-check-circle"></i> Valider la sélection des transporteurs
+                            </button>
+                        </div>
                     {% else %}
                         <div class="alert alert-info">
                             <i class="fas fa-info-circle"></i> Aucun transporteur assigné à cette prestation.
+                        </div>
+                        
+                        <!-- Bouton pour ajouter des transporteurs -->
+                        <div class="mt-3 text-center">
+                            <a href="{{ url_for('prestation.edit', id=prestation.id) }}#transporteurs" class="btn btn-primary">
+                                <i class="fas fa-user-plus"></i> Assigner des transporteurs
+                            </a>
                         </div>
                     {% endif %}
                 </div>
@@ -286,6 +384,51 @@
 
 {% block page_scripts %}
 <script>
-    // Ici vous pouvez ajouter du JavaScript spécifique à cette page si nécessaire
+    document.addEventListener('DOMContentLoaded', function() {
+        // Gestion du bouton de validation des transporteurs
+        const validerTransporteursBtn = document.getElementById('valider-transporteurs');
+        
+        if (validerTransporteursBtn) {
+            validerTransporteursBtn.addEventListener('click', function() {
+                // Récupérer les transporteurs assignés
+                const transporteurs = [];
+                document.querySelectorAll('.list-group-item').forEach(item => {
+                    transporteurs.push(item.textContent.trim());
+                });
+                
+                if (transporteurs.length === 0) {
+                    alert('Aucun transporteur n\'est assigné à cette prestation.');
+                    return;
+                }
+                
+                // Afficher un message de confirmation
+                const message = `Les transporteurs suivants ont été validés pour cette prestation :\n${transporteurs.join('\n')}`;
+                
+                // Créer une alerte de succès stylisée
+                const alertDiv = document.createElement('div');
+                alertDiv.className = 'alert alert-success alert-dismissible fade show mt-3';
+                alertDiv.role = 'alert';
+                alertDiv.innerHTML = `
+                    <strong>Transporteurs validés!</strong> ${message.replace(/\n/g, '<br>')}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fermer"></button>
+                `;
+                
+                // Insérer l'alerte avant le bouton de validation
+                validerTransporteursBtn.parentNode.insertBefore(alertDiv, validerTransporteursBtn);
+                
+                // Masquer le bouton après validation
+                validerTransporteursBtn.style.display = 'none';
+                
+                // Envoyer une requête AJAX pour enregistrer la validation (optionnel)
+                // fetch('/api/prestations/{{ prestation.id }}/validate-transporteurs', {
+                //     method: 'POST',
+                //     headers: {
+                //         'Content-Type': 'application/json',
+                //     },
+                //     body: JSON.stringify({ validated: true })
+                // });
+            });
+        }
+    });
 </script>
 {% endblock %}

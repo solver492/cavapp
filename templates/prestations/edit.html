@@ -5,6 +5,89 @@
 {% block styles %}
     {{ super() }}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/prestation-theme.css') }}">
+    <style>
+        .fade-in {
+            animation: fadeIn 0.5s;
+        }
+        
+        .fade-out {
+            animation: fadeOut 0.3s;
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        
+        .client-supplementaire {
+            transition: all 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes fadeOut {
+            from { opacity: 1; transform: translateY(0); }
+            to { opacity: 0; transform: translateY(-10px); }
+        }
+        
+        /* Style pour le sélecteur de type de prestation */
+        .prestation-type-selector {
+            position: relative;
+            z-index: 10;
+        }
+        
+        .form-switch-lg {
+            min-height: 2.5rem;
+            padding-left: 4.5em;
+        }
+        
+        .form-switch-lg .form-check-input {
+            height: 2rem;
+            width: 3.5rem;
+            border-radius: 2rem;
+            cursor: pointer;
+        }
+        
+        .form-check-label {
+            position: relative;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+        }
+        
+        .standard-label, .groupage-label {
+            position: absolute;
+            transition: all 0.3s ease;
+        }
+        
+        .standard-label {
+            left: -4.2rem;
+            opacity: 1;
+            color: #0d6efd;
+        }
+        
+        .groupage-label {
+            right: -4.2rem;
+            opacity: 0.5;
+            color: #6c757d;
+        }
+        
+        .form-check-input:checked ~ .form-check-label .standard-label {
+            opacity: 0.5;
+            color: #6c757d;
+        }
+        
+        .form-check-input:checked ~ .form-check-label .groupage-label {
+            opacity: 1;
+            color: #0d6efd;
+        }
+        
+        .form-check-input:focus {
+            box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+        }
+    </style>
 {% endblock %}
 
 {% block head %}
@@ -13,1524 +96,89 @@
     <script src="{{ url_for('static', filename='js/prestation-form.js') }}"></script>
     <!-- Inclure le script de gestion des transporteurs disponibles -->
     <script src="{{ url_for('static', filename='js/transporteurs-disponibilite.js') }}"></script>
-    <!-- Script pour masquer les doublons de transporteurs bientôt disponibles -->
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Fonction pour masquer tous les conteneurs statiques des transporteurs bientôt disponibles
-            function masquerTransporteursDupliques() {
-                // Suppression spécifique du second panneau de transporteurs en bas de page
-                const transporteursSections = Array.from(document.querySelectorAll('h4, h5, .card-title'));
-                transporteursSections.forEach(section => {
-                    if (section.textContent && section.textContent.trim() === 'Transporteurs bientôt disponibles') {
-                        // Si ce n'est pas la bulle flottante, supprimer complètement cette section
-                        const container = section.closest('.card, .row, section');
-                        if (container && !container.classList.contains('floating-bubble') && !container.closest('#vehicules-suggeres-bubble')) {
-                            if (container.parentNode) {
-                                container.parentNode.removeChild(container);
-                            } else {
-                                container.style.display = 'none';
-                                container.style.visibility = 'hidden';
-                                container.style.height = '0';
-                                container.style.margin = '0';
-                                container.style.padding = '0';
-                            }
-                        }
-                    }
-                });
-                
-                // Cibler spécifiquement le conteneur visible sur la page
-                const specificTransporteursSection = document.querySelector('.card:not(#vehicules-suggeres-bubble) h5');
-                if (specificTransporteursSection && specificTransporteursSection.textContent.includes('Transporteurs bientôt disponibles')) {
-                    const parentCard = specificTransporteursSection.closest('.card');
-                    if (parentCard && parentCard.parentNode) {
-                        parentCard.parentNode.removeChild(parentCard);
-                    }
-                }
-                // Recherche par texte exact
-                const elements = document.querySelectorAll('h4, h5, div, p');
-                elements.forEach(function(element) {
-                    if (element.textContent && element.textContent.trim() === 'Transporteurs bientôt disponibles') {
-                        // Trouver le conteneur parent
-                        let parent = element;
-                        // Remonter jusqu'à trouver une row ou un conteneur
-                        while (parent && (!parent.classList.contains('row') && !parent.classList.contains('card'))) {
-                            parent = parent.parentElement;
-                        }
-                        
-                        // Si on a trouvé un conteneur, le masquer
-                        if (parent && parent !== document.getElementById('vehicules-suggeres-bubble')) {
-                            parent.classList.add('hide-duplicate-transporteurs');
-                            parent.style.display = 'none';
-                        }
-                    }
-                    
-                    // Vérifier aussi le contenu pour "Cavalier Transporteur - Fourgon"
-                    if (element.textContent && element.textContent.includes('Cavalier Transporteur') && 
-                        element.textContent.includes('Fourgon') && 
-                        !element.closest('#vehicules-suggeres-bubble')) {
-                        
-                        let parent = element;
-                        while (parent && (!parent.classList.contains('row') && !parent.classList.contains('card'))) {
-                            parent = parent.parentElement;
-                        }
-                        
-                        if (parent && !parent.closest('#vehicules-suggeres-bubble')) {
-                            parent.classList.add('hide-duplicate-transporteurs');
-                            parent.style.display = 'none';
-                        }
-                    }
-                });
-                
-                // S'assurer que la bulle est visible
-                const bubble = document.getElementById('vehicules-suggeres-bubble');
-                if (bubble) {
-                    bubble.style.display = 'block';
-                }
-            }
-            
-            // Exécuter immédiatement
-            masquerTransporteursDupliques();
-            
-            // Et continuer à vérifier après tout chargement et changement
-            setTimeout(masquerTransporteursDupliques, 500);
-            setTimeout(masquerTransporteursDupliques, 1000);
-            setTimeout(masquerTransporteursDupliques, 2000);
-            
-            // Observer les changements dans le DOM pour réagir au contenu généré dynamiquement
-            const observer = new MutationObserver(function() {
-                masquerTransporteursDupliques();
-            });
-            
-            observer.observe(document.body, { childList: true, subtree: true });
-        });
-    </script>
-    
-    <!-- Script pour gérer les messages d'erreur avec un système de commentaires -->
-    <script>
-        // Système de stockage des commentaires d'erreur
-        if (!window.commentSystem) {
-            window.commentSystem = {
-                comments: [],
-                addComment: function(message, type = 'error', source = 'system') {
-                    const id = Date.now() + '-' + Math.random().toString(36).substr(2, 9);
-                    const comment = {
-                        id: id,
-                        message: message,
-                        type: type,
-                        source: source,
-                        timestamp: new Date(),
-                        read: false
-                    };
-                    this.comments.push(comment);
-                    // Sauvegarder dans le localStorage
-                    this.saveComments();
-                    // Mettre à jour le compteur
-                    this.updateCounter();
-                    return id;
-                },
-                getComments: function() {
-                    return this.comments;
-                },
-                clearComments: function() {
-                    this.comments = [];
-                    this.saveComments();
-                    this.updateCounter();
-                },
-                markAsRead: function(id) {
-                    const comment = this.comments.find(c => c.id === id);
-                    if (comment) {
-                        comment.read = true;
-                        this.saveComments();
-                        this.updateCounter();
-                    }
-                },
-                deleteComment: function(id) {
-                    const index = this.comments.findIndex(c => c.id === id);
-                    if (index !== -1) {
-                        this.comments.splice(index, 1);
-                        this.saveComments();
-                        this.updateCounter();
-                    }
-                },
-                saveComments: function() {
-                    try {
-                        localStorage.setItem('r_cavalier_comments', JSON.stringify(this.comments));
-                    } catch (e) {
-                        console.error('Erreur lors de la sauvegarde des commentaires', e);
-                    }
-                },
-                loadComments: function() {
-                    try {
-                        const saved = localStorage.getItem('r_cavalier_comments');
-                        if (saved) {
-                            this.comments = JSON.parse(saved);
-                            this.updateCounter();
-                        }
-                    } catch (e) {
-                        console.error('Erreur lors du chargement des commentaires', e);
-                    }
-                },
-                updateCounter: function() {
-                    const unreadCount = this.comments.filter(c => !c.read).length;
-                    const counterBadge = document.getElementById('comment-counter');
-                    if (counterBadge) {
-                        counterBadge.textContent = unreadCount;
-                        counterBadge.style.display = unreadCount > 0 ? 'block' : 'none';
-                    }
-                }
-            };
-            
-            // Charger les commentaires existants
-            window.commentSystem.loadComments();
-        }
-        
-        // Redéfinir l'objet fetch pour intercepter toutes les requêtes
-        const originalFetch = window.fetch;
-        window.fetch = function() {
-            return originalFetch.apply(this, arguments)
-                .then(function(response) {
-                    // Si la réponse est une erreur 400, créer une fausse réponse réussie mais enregistrer l'erreur
-                    if (!response.ok && response.status === 400) {
-                        // Capturer l'erreur pour l'ajouter au système de commentaires
-                        response.clone().text().then(text => {
-                            try {
-                                const errorData = JSON.parse(text);
-                                const errorMessage = errorData.message || 'Erreur 400: Requête incorrecte';
-                                window.commentSystem.addComment(errorMessage, 'error', 'api');
-                            } catch (e) {
-                                window.commentSystem.addComment('Erreur 400: Requête incorrecte', 'error', 'api');
-                            }
-                        }).catch(e => {
-                            window.commentSystem.addComment('Erreur 400: Requête incorrecte', 'error', 'api');
-                        });
-                        
-                        // Créer une réponse positive fictive
-                        const modifiedResponse = new Response(JSON.stringify({
-                            success: true,
-                            message: "Informations disponibles",
-                            transporteurs: [],
-                            soon_available: [{
-                                id: 1,
-                                nom: "Cavalier",
-                                prenom: "Transporteur",
-                                vehicule: "Fourgon 12m3",
-                                type_vehicule: "Fourgon",
-                                disponible_le: "07/04/2025"
-                            }],
-                            vehicules_recommandes: []
-                        }), {
-                            status: 200,
-                            statusText: 'OK',
-                            headers: new Headers({
-                                'Content-Type': 'application/json'
-                            })
-                        });
-                        
-                        // Ajouter toutes les méthodes d'origine de la réponse
-                        const clone = response.clone();
-                        modifiedResponse.clone = function() { return modifiedResponse; };
-                        modifiedResponse.text = function() { 
-                            return Promise.resolve(JSON.stringify({
-                                success: true,
-                                message: "Informations disponibles",
-                                transporteurs: [],
-                                soon_available: [{
-                                    id: 1,
-                                    nom: "Cavalier",
-                                    prenom: "Transporteur",
-                                    vehicule: "Fourgon 12m3",
-                                    type_vehicule: "Fourgon",
-                                    disponible_le: "07/04/2025"
-                                }],
-                                vehicules_recommandes: []
-                            }));
-                        };
-                        modifiedResponse.json = function() {
-                            return Promise.resolve({
-                                success: true,
-                                message: "Informations disponibles",
-                                transporteurs: [],
-                                soon_available: [{
-                                    id: 1,
-                                    nom: "Cavalier",
-                                    prenom: "Transporteur",
-                                    vehicule: "Fourgon 12m3",
-                                    type_vehicule: "Fourgon",
-                                    disponible_le: "07/04/2025"
-                                }],
-                                vehicules_recommandes: []
-                            });
-                        };
-                        
-                        return modifiedResponse;
-                    }
-                    return response;
-                })
-                .catch(function(error) {
-                    // Intercepter toutes les erreurs et retourner une fausse réponse réussie
-                    console.log('Erreur interceptée par fetch:', error);
-                    
-                    // Créer une réponse positive fictive
-                    const fakeResponse = new Response(JSON.stringify({
-                        success: true,
-                        message: "Informations disponibles",
-                        transporteurs: [],
-                        soon_available: [{
-                            id: 1,
-                            nom: "Cavalier",
-                            prenom: "Transporteur",
-                            vehicule: "Fourgon 12m3",
-                            type_vehicule: "Fourgon",
-                            disponible_le: "07/04/2025"
-                        }],
-                        vehicules_recommandes: []
-                    }), {
-                        status: 200,
-                        statusText: 'OK',
-                        headers: new Headers({
-                            'Content-Type': 'application/json'
-                        })
-                    });
-                    
-                    // Ajouter les méthodes nécessaires
-                    fakeResponse.clone = function() { return fakeResponse; };
-                    fakeResponse.text = function() { 
-                        return Promise.resolve(JSON.stringify({
-                            success: true,
-                            message: "Informations disponibles",
-                            transporteurs: [],
-                            soon_available: [{
-                                id: 1,
-                                nom: "Cavalier",
-                                prenom: "Transporteur",
-                                vehicule: "Fourgon 12m3",
-                                type_vehicule: "Fourgon",
-                                disponible_le: "07/04/2025"
-                            }],
-                            vehicules_recommandes: []
-                        }));
-                    };
-                    fakeResponse.json = function() {
-                        return Promise.resolve({
-                            success: true,
-                            message: "Informations disponibles",
-                            transporteurs: [],
-                            soon_available: [{
-                                id: 1,
-                                nom: "Cavalier",
-                                prenom: "Transporteur",
-                                vehicule: "Fourgon 12m3",
-                                type_vehicule: "Fourgon",
-                                disponible_le: "07/04/2025"
-                            }],
-                            vehicules_recommandes: []
-                        });
-                    };
-                    
-                    return Promise.resolve(fakeResponse);
-                });
-        };
-
-        // Fonction pour capturer et stocker les messages d'erreur dans le système de commentaires
-        function captureErrorMessages() {
-            // Capturer les modals d'erreur
-            const modals = document.querySelectorAll('.modal');
-            const backdrops = document.querySelectorAll('.modal-backdrop');
-            
-            // Capturer le contenu des modales et les ajouter au système de commentaires
-            modals.forEach(modal => {
-                if (modal.classList.contains('show')) {
-                    // Extraire le message d'erreur
-                    const errorTitle = modal.querySelector('.modal-title');
-                    const errorBody = modal.querySelector('.modal-body');
-                    let errorMessage = '';
-                    
-                    if (errorTitle) {
-                        errorMessage += errorTitle.textContent.trim() + ' - ';
-                    }
-                    
-                    if (errorBody) {
-                        errorMessage += errorBody.textContent.trim();
-                    }
-                    
-                    if (errorMessage) {
-                        // Ajouter au système de commentaires
-                        window.commentSystem.addComment(errorMessage, 'error', 'modal');
-                    }
-                    
-                    // Masquer la modale
-                    modal.classList.remove('show');
-                    modal.setAttribute('aria-hidden', 'true');
-                    modal.style.display = 'none';
-                }
-            });
-            
-            // Masquer tous les backdrops
-            backdrops.forEach(backdrop => {
-                backdrop.style.display = 'none';
-            });
-        }
-
-        // Exécuter immédiatement au chargement de la page
-        document.addEventListener('DOMContentLoaded', function() {
-            captureErrorMessages();
-            // Et continuer à vérifier périodiquement
-            setInterval(captureErrorMessages, 1000);
-        });
-
-        // Mais aussi exécuter tout de suite au cas où la page est déjà chargée
-        if (document.readyState === 'complete' || document.readyState === 'interactive') {
-            captureErrorMessages();
-        }
-
-        // Fonction pour supprimer immédiatement le message d'erreur existant
-        function removeModal() {
-            // Trouver tous les modales et les supprimer
-            document.querySelectorAll('.modal').forEach(function(modal) {
-                if (modal && modal.parentNode) {
-                    modal.parentNode.removeChild(modal);
-                }
-            });
-
-            // Supprimer tous les backdrops
-            document.querySelectorAll('.modal-backdrop').forEach(function(backdrop) {
-                if (backdrop && backdrop.parentNode) {
-                    backdrop.parentNode.removeChild(backdrop);
-                }
-            });
-
-            // Supprimer les classes et styles du body
-            document.body.classList.remove('modal-open');
-            document.body.style.overflow = '';
-            document.body.style.paddingRight = '';
-        }
-
-        // Exécuter immédiatement au chargement de la page
-        document.addEventListener('DOMContentLoaded', function() {
-            removeModal();
-            // Et continuer à vérifier périodiquement
-            setInterval(removeModal, 50);
-        });
-
-        // Mais aussi exécuter tout de suite au cas où la page est déjà chargée
-        if (document.readyState === 'complete' || document.readyState === 'interactive') {
-            removeModal();
-        }
-    </script>
+    <!-- Inclure le script d'amélioration du widget de transporteurs -->
+    <script src="{{ url_for('static', filename='js/transporteurs-widget.js') }}"></script>
+    <!-- Inclure le script pour assurer le bon fonctionnement du bouton d'enregistrement -->
+    <script src="{{ url_for('static', filename='js/prestation-submit.js') }}"></script>
+    <!-- Inclure le script pour supprimer la bulle des transporteurs bientôt disponibles -->
+    <script src="{{ url_for('static', filename='js/supprimer-bulle-transporteurs.js') }}"></script>
+    <!-- Inclure les styles pour le widget de transporteurs -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/transporteurs-widget.css') }}">
     <link href="{{ url_for('static', filename='css/lib/fullcalendar.min.css') }}" rel="stylesheet">
-    <style>
-/* Styles spécifiques à cette page pour corriger les problèmes de select */
-#type_demenagement_id {
-    width: 100%;
-    height: 38px;
-    padding: 0.375rem 0.75rem;
-    font-size: 1rem;
-    line-height: 1.5;
-    color: #212529;
-    background-color: #fff;
-    background-clip: padding-box;
-    border: 1px solid #ced4da;
-    border-radius: 0.25rem;
-    appearance: menulist !important;
-    -webkit-appearance: menulist !important;
-    -moz-appearance: menulist !important;
-}
-
-/* Style pour le système de commentaires */
-.modal-backdrop, .modal {
-    /* On les rend invisibles mais les messages sont capturés */
-    display: none !important;
-    opacity: 0 !important;
-    z-index: -1 !important;
-}
-
-/* Style pour supprimer la section en double des Transporteurs bientôt disponibles */
-#soon-available-container,
-.hide-duplicate-transporteurs,
-div[id*="bientot-disponible"],
-div[id*="soon-available"],
-.card:has(h5:contains('Transporteurs bientôt disponibles')),
-div.card h5:contains('Transporteurs bientôt disponibles'),
-.row:has(h4:contains('Transporteurs bientôt disponibles')),
-h4:contains('Transporteurs bientôt disponibles') {
-    display: none !important;
-    visibility: hidden !important;
-    opacity: 0 !important;
-    height: 0 !important;
-    overflow: hidden !important;
-    margin: 0 !important;
-    padding: 0 !important;
-}
-
-/* Style de surcharge pour conserver seulement la bulle flottante */
-#vehicules-suggeres-bubble,
-.floating-bubble {
-    display: block !important;
-}
-
-.comment-system-btn {
-    position: fixed;
-    bottom: 20px;
-    left: 20px;
-    background-color: #0d6efd;
-    color: white;
-    border-radius: 50%;
-    width: 50px;
-    height: 50px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-    z-index: 9998;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.comment-system-btn:hover {
-    transform: scale(1.1);
-    background-color: #0b5ed7;
-}
-
-.comment-counter {
-    position: absolute;
-    top: -5px;
-    right: -5px;
-    background-color: #dc3545;
-    color: white;
-    border-radius: 50%;
-    width: 20px;
-    height: 20px;
-    font-size: 12px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.comment-panel {
-    position: fixed;
-    bottom: 80px;
-    left: 20px;
-    width: 300px;
-    max-height: 400px;
-    background-color: white;
-    border-radius: 8px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-    z-index: 9997;
-    overflow: hidden;
-    display: none;
-    flex-direction: column;
-}
-
-.comment-panel-header {
-    padding: 12px 15px;
-    background-color: #0d6efd;
-    color: white;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.comment-panel-title {
-    font-weight: bold;
-    font-size: 16px;
-}
-
-.comment-panel-close {
-    cursor: pointer;
-}
-
-.comment-panel-body {
-    flex: 1;
-    overflow-y: auto;
-    max-height: 300px;
-    padding: 0;
-}
-
-.comment-item {
-    padding: 10px 15px;
-    border-bottom: 1px solid #eee;
-    position: relative;
-}
-
-.comment-item:not(.read) {
-    background-color: #f8f9fa;
-}
-
-.comment-message {
-    margin-bottom: 5px;
-    word-break: break-word;
-}
-
-.comment-meta {
-    font-size: 12px;
-    color: #6c757d;
-    display: flex;
-    justify-content: space-between;
-}
-
-.comment-actions {
-    display: flex;
-    gap: 5px;
-}
-
-.comment-action {
-    cursor: pointer;
-    padding: 2px 5px;
-    border-radius: 3px;
-    font-size: 11px;
-}
-
-.comment-action.mark-read {
-    background-color: #28a745;
-    color: white;
-}
-
-.comment-action.delete {
-    background-color: #dc3545;
-    color: white;
-}
-
-.comment-panel-footer {
-    padding: 10px 15px;
-    border-top: 1px solid #eee;
-    text-align: right;
-}
-
-.comment-panel-clear {
-    background-color: #6c757d;
-    color: white;
-    border: none;
-    padding: 5px 10px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 12px;
-}
-
-.comment-empty {
-    padding: 20px;
-    text-align: center;
-    color: #6c757d;
-}
-
-/* Style pour la bulle flottante fixe */
-#fixed-bubble {
-    position: fixed;
-    top: 100px;
-    right: 20px;
-    width: 300px;
-    background: #f8f9fa;
-    border-left: 4px solid #0d6efd;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    z-index: 9999;
-    padding: 15px;
-    font-family: sans-serif;
-}
-
-#fixed-bubble-header {
-    font-weight: bold;
-    margin-bottom: 10px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid #dee2e6;
-    color: #0d6efd;
-}
-
-#fixed-bubble-content {
-    white-space: pre-line;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(-10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-/* Style pour la bulle flottante des véhicules suggérés */
-.floating-bubble {
-    position: fixed;
-    right: 20px;
-    top: 120px;
-    z-index: 9999;
-    width: 320px;
-    padding: 15px;
-    background-color: #f8f9fa;
-    border-radius: 10px;
-    box-shadow: 0 6px 12px rgba(0,0,0,0.15);
-    margin-bottom: 15px;
-    border-left: 4px solid #0d6efd;
-    transition: all 0.3s ease;
-    max-height: 400px;
-    overflow-y: auto;
-    animation: fadeIn 0.5s ease-in-out;
-    transform: translateX(100px);
-    opacity: 0;
-    transition: transform 0.5s ease, opacity 0.5s ease;
-}
-
-.floating-bubble .bubble-header {
-    font-weight: bold;
-    margin-bottom: 10px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid #dee2e6;
-    color: #0d6efd;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.floating-bubble .bubble-header::before {
-    content: '\f0b2';
-    font-family: 'Font Awesome 5 Free';
-    font-weight: 900;
-    margin-right: 5px;
-}
-
-#vehicules-suggeres-bubble.loading {
-    background-color: #f0f8ff;
-    border-left-color: #17a2b8;
-}
-
-#vehicules-suggeres-bubble.loading::after {
-    content: '';
-    display: inline-block;
-    width: 1em;
-    height: 1em;
-    border: 2px solid rgba(0, 123, 255, 0.25);
-    border-top: 2px solid #0d6efd;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    position: absolute;
-    top: 15px;
-    right: 15px;
-}
-
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-#vehicules-suggeres-bubble.error {
-    background-color: #fff8f8;
-    border-left-color: #dc3545;
-}
-
-#vehicules-suggeres-content {
-    white-space: pre-line;
-}
-</style>
 {% endblock %}
 
 {% block content %}
-
-<!-- Inclusion du script de sélection de véhicules -->
-<script src="{{ url_for('static', filename='js/vehicule-selector.js') }}"></script>
-
-<!-- Style correctif pour l'affichage des select -->
-<link rel="stylesheet" href="{{ url_for('static', filename='css/select-fix.css') }}">
-
-<!-- Style de nettoyage pour supprimer les éléments gênants -->
-<link rel="stylesheet" href="{{ url_for('static', filename='css/cleanup.css') }}">
-
-<!-- FontAwesome pour les icônes -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-
-<!-- Script correctif pour repositionner les éléments flottants -->
-<script src="{{ url_for('static', filename='js/elements-fix.js') }}"></script>
-
-<!-- Script d'intégration WhatsApp -->
-<script src="{{ url_for('static', filename='js/whatsapp-integration.js') }}"></script>
-<style>
-/* Style pour la bulle flottante interactive et déplaçable */
-.bubble-container {
-    position: fixed;
-    bottom: 90px;
-    right: 30px;
-    z-index: 1000;
-    cursor: move; /* Indique que l'élément est déplaçable */
-}
-
-.bubble-container.dragging {
-    opacity: 0.8;
-    transition: none;
-}
-
-.bubble-toggle {
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    background-color: #0d6efd;
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-    transition: all 0.3s ease;
-    position: relative;
-    z-index: 1001;
-}
-
-.bubble-toggle:hover {
-    transform: scale(1.1);
-    background-color: #0b5ed7;
-}
-
-.bubble-toggle i {
-    font-size: 24px;
-}
-
-.bubble-content {
-    position: absolute;
-    bottom: 70px;
-    right: 0;
-    width: 300px;
-    background-color: white;
-    border-radius: 12px;
-    padding: 15px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-    transform: scale(0);
-    transform-origin: bottom right;
-    transition: transform 0.3s ease;
-    z-index: 1000;
-    max-height: 400px;
-    overflow-y: auto;
-    display: none;
-}
-
-.bubble-content.show {
-    transform: scale(1);
-    display: block;
-}
-
-.bubble-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 10px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid #dee2e6;
-}
-
-.bubble-title {
-    font-weight: bold;
-    color: #0d6efd;
-}
-
-.bubble-close {
-    cursor: pointer;
-    color: #6c757d;
-    font-size: 16px;
-}
-
-.bubble-close:hover {
-    color: #dc3545;
-}
-
-.bubble-footer {
-    margin-top: 10px;
-    text-align: right;
-    border-top: 1px solid #dee2e6;
-    padding-top: 10px;
-}
-
-.bubble-close-btn {
-    padding: 5px 10px;
-    background-color: #0d6efd;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 12px;
-}
-
-.bubble-close-btn:hover {
-    background-color: #0b5ed7;
-}
-
-/* Style pour masquer complètement les erreurs */
-.modal, .modal-backdrop, .modal-open {
-    display: none !important;
-    opacity: 0 !important;
-    z-index: -9999 !important;
-    pointer-events: none !important;
-    visibility: hidden !important;
-    position: absolute !important;
-    width: 0 !important;
-    height: 0 !important;
-    overflow: hidden !important;
-    clip: rect(0, 0, 0, 0) !important;
-    margin: -1px !important;
-    padding: 0 !important;
-    border: 0 !important;
-}
-</style>
-
-<script>
-// Script pour gérer la bulle interactive et déplaçable et les erreurs
-document.addEventListener('DOMContentLoaded', function() {
-    // Définir window.commentSystem s'il n'existe pas déjà
-    if (!window.commentSystem) {
-        window.commentSystem = {
-            comments: [],
-            addComment: function(message, type, source) {
-                console.log('Message capturé:', message);
-                // Fonctionnalité simplifiée pour éviter les erreurs
-            },
-            updateCounter: function() {}
-        };
-    }
-    // Fonction pour capturer et supprimer radicalement toutes les erreurs
-    function captureAndRemoveAllErrors() {
-        // Trouver tous les modals et notifications d'erreur
-        const modals = document.querySelectorAll('.modal');
-        const errorMessages = document.querySelectorAll('.alert, .error-message');
-        
-        // Capturer et supprimer les erreurs des modals
-        modals.forEach(modal => {
-            if (!modal.hasAttribute('data-captured')) {
-                const title = modal.querySelector('.modal-title');
-                const body = modal.querySelector('.modal-body');
-                let message = '';
-                
-                if (title) message += title.textContent.trim() + ' - ';
-                if (body) message += body.textContent.trim();
-                
-                if (message && window.commentSystem) {
-                    window.commentSystem.addComment(message, 'error', 'modal');
-                    modal.setAttribute('data-captured', 'true');
-                }
-                
-                // Supprimer complètement
-                try {
-                    modal.style.display = 'none';
-                    modal.style.zIndex = '-9999';
-                    if (modal.parentNode) {
-                        modal.parentNode.removeChild(modal);
-                    }
-                } catch (e) {
-                    console.error('Erreur lors de la suppression du modal:', e);
-                }
-            }
-        });
-        
-        // Capturer et supprimer les messages d'erreur
-        errorMessages.forEach(msg => {
-            if (!msg.hasAttribute('data-captured')) {
-                const message = msg.textContent.trim();
-                if (message && window.commentSystem) {
-                    window.commentSystem.addComment(message, 'error', 'alert');
-                    msg.setAttribute('data-captured', 'true');
-                }
-                
-                // Supprimer complètement
-                try {
-                    if (msg.parentNode) {
-                        msg.parentNode.removeChild(msg);
-                    }
-                } catch (e) {
-                    console.error('Erreur lors de la suppression du message:', e);
-                }
-            }
-        });
-        
-        // Supprimer tous les backdrops
-        const backdrops = document.querySelectorAll('.modal-backdrop');
-        backdrops.forEach(backdrop => {
-            try {
-                backdrop.style.display = 'none';
-                if (backdrop.parentNode) {
-                    backdrop.parentNode.removeChild(backdrop);
-                }
-            } catch (e) {
-                console.error('Erreur lors de la suppression du backdrop:', e);
-            }
-        });
-        
-        // S'assurer que le body n'a pas la classe modal-open
-        document.body.classList.remove('modal-open');
-        document.body.style.overflow = 'auto';
-        document.body.style.paddingRight = '';
-    }
-    
-    // Fonction pour créer et gérer le panneau de commentaires
-    function createCommentPanel() {
-        // Vérifier si le panneau existe déjà
-        if (document.getElementById('comment-system-btn')) return;
-        
-        // Créer le bouton de commentaires
-        const commentBtn = document.createElement('div');
-        commentBtn.id = 'comment-system-btn';
-        commentBtn.className = 'comment-system-btn';
-        commentBtn.innerHTML = '<i class="fas fa-comment"></i>';
-        
-        // Ajouter le compteur
-        const counter = document.createElement('div');
-        counter.id = 'comment-counter';
-        counter.className = 'comment-counter';
-        counter.textContent = '0';
-        counter.style.display = 'none';
-        commentBtn.appendChild(counter);
-        
-        // Créer le panneau de commentaires
-        const panel = document.createElement('div');
-        panel.id = 'comment-panel';
-        panel.className = 'comment-panel';
-        
-        const panelHeader = document.createElement('div');
-        panelHeader.className = 'comment-panel-header';
-        panelHeader.innerHTML = '<div class="comment-panel-title">Messages système</div><div class="comment-panel-close"><i class="fas fa-times"></i></div>';
-        
-        const panelBody = document.createElement('div');
-        panelBody.className = 'comment-panel-body';
-        
-        const panelFooter = document.createElement('div');
-        panelFooter.className = 'comment-panel-footer';
-        panelFooter.innerHTML = '<button class="comment-panel-clear">Tout effacer</button>';
-        
-        panel.appendChild(panelHeader);
-        panel.appendChild(panelBody);
-        panel.appendChild(panelFooter);
-        
-        // Ajouter au document
-        document.body.appendChild(commentBtn);
-        document.body.appendChild(panel);
-        
-        // Ajouter les événements
-        commentBtn.addEventListener('click', function() {
-            panel.style.display = panel.style.display === 'flex' ? 'none' : 'flex';
-            renderComments();
-        });
-        
-        panelHeader.querySelector('.comment-panel-close').addEventListener('click', function() {
-            panel.style.display = 'none';
-        });
-        
-        panelFooter.querySelector('.comment-panel-clear').addEventListener('click', function() {
-            window.commentSystem.clearComments();
-            renderComments();
-        });
-        
-        // Fonction pour rendre les commentaires
-        function renderComments() {
-            const comments = window.commentSystem.getComments();
-            
-            if (comments.length === 0) {
-                panelBody.innerHTML = '<div class="comment-empty">Aucun message</div>';
-                return;
-            }
-            
-            panelBody.innerHTML = '';
-            
-            comments.forEach(comment => {
-                const commentItem = document.createElement('div');
-                commentItem.className = `comment-item ${comment.read ? 'read' : ''}`;
-                
-                const messageDiv = document.createElement('div');
-                messageDiv.className = 'comment-message';
-                messageDiv.textContent = comment.message;
-                
-                const metaDiv = document.createElement('div');
-                metaDiv.className = 'comment-meta';
-                
-                const timeDiv = document.createElement('div');
-                timeDiv.textContent = new Date(comment.timestamp).toLocaleString();
-                
-                const actionsDiv = document.createElement('div');
-                actionsDiv.className = 'comment-actions';
-                
-                if (!comment.read) {
-                    const markReadBtn = document.createElement('span');
-                    markReadBtn.className = 'comment-action mark-read';
-                    markReadBtn.textContent = 'Lu';
-                    markReadBtn.addEventListener('click', function() {
-                        window.commentSystem.markAsRead(comment.id);
-                        renderComments();
-                    });
-                    actionsDiv.appendChild(markReadBtn);
-                }
-                
-                const deleteBtn = document.createElement('span');
-                deleteBtn.className = 'comment-action delete';
-                deleteBtn.textContent = 'Supprimer';
-                deleteBtn.addEventListener('click', function() {
-                    window.commentSystem.deleteComment(comment.id);
-                    renderComments();
-                });
-                actionsDiv.appendChild(deleteBtn);
-                
-                metaDiv.appendChild(timeDiv);
-                metaDiv.appendChild(actionsDiv);
-                
-                commentItem.appendChild(messageDiv);
-                commentItem.appendChild(metaDiv);
-                panelBody.appendChild(commentItem);
-            });
-        }
-    }
-    
-    // Fonction pour obtenir le contenu dynamique selon le type de déménagement
-    function getDynamicContent() {
-        const { typeName, typeId } = getTypeDemenagementInfo();
-        
-        // Si aucun type n'est sélectionné
-        if (!typeId || typeId === '0') {
-            return `
-                <div class="alert alert-info">
-                    <p>Veuillez sélectionner un type de déménagement pour voir les véhicules recommandés.</p>
-                </div>
-            `;
-        }
-        
-        // Si nous avons un type de déménagement sélectionné
-        return `
-            <div class="mt-2">
-                <strong>Type de déménagement:</strong> ${typeName}
-            </div>
-            <div class="mt-3">
-                <strong>Transporteurs bientôt disponibles:</strong>
-                <ul class="mt-2">
-                    <li>Transporteur Cavalier - Fourgon 12m³ (disponible le 07/04/2025)</li>
-                </ul>
-            </div>
-            <div class="mt-3">
-                <strong>Véhicules recommandés pour ce type:</strong>
-                <ul class="mt-2">
-                    <li>Fourgon 12m³ - idéal pour ${typeName}</li>
-                    <li>Camion 20m³ - pour les déménagements plus conséquents</li>
-                </ul>
-            </div>
-            <p class="text-muted mt-3"><small>Maintenez Ctrl pour sélectionner plusieurs transporteurs.</small></p>
-        `;
-    }
-    
-    // Fonction pour créer la bulle interactive
-    function createDraggableBubble() {
-        // Supprimer si elle existe déjà
-        const existingBubble = document.querySelector('.bubble-container');
-        if (existingBubble) {
-            return existingBubble;
-        }
-        
-        // Créer le conteneur de la bulle
-        const bubbleContainer = document.createElement('div');
-        bubbleContainer.className = 'bubble-container';
-        
-        // Définir la position initiale, ou utiliser des valeurs stockées
-        const savedX = localStorage.getItem('bubbleX');
-        const savedY = localStorage.getItem('bubbleY');
-        if (savedX && savedY) {
-            bubbleContainer.style.left = savedX;
-            bubbleContainer.style.top = savedY;
-            bubbleContainer.style.right = 'auto';
-            bubbleContainer.style.bottom = 'auto';
-        }
-        
-        // Créer le bouton de toggle
-        const bubbleToggle = document.createElement('div');
-        bubbleToggle.className = 'bubble-toggle';
-        bubbleToggle.innerHTML = '<i class="fas fa-truck"></i>';
-        
-        // Créer le contenu
-        const bubbleContent = document.createElement('div');
-        bubbleContent.className = 'bubble-content';
-        
-        // Créer l'en-tête
-        const bubbleHeader = document.createElement('div');
-        bubbleHeader.className = 'bubble-header';
-        
-        const bubbleTitle = document.createElement('div');
-        bubbleTitle.className = 'bubble-title';
-        bubbleTitle.textContent = 'Véhicules suggérés';
-        
-        const bubbleClose = document.createElement('div');
-        bubbleClose.className = 'bubble-close';
-        bubbleClose.innerHTML = '×';
-        
-        bubbleHeader.appendChild(bubbleTitle);
-        bubbleHeader.appendChild(bubbleClose);
-        
-        // Créer le corps
-        const bubbleBody = document.createElement('div');
-        bubbleBody.className = 'bubble-body';
-        bubbleBody.innerHTML = getDynamicContent();
-        
-        // Créer le pied avec bouton fermer
-        const bubbleFooter = document.createElement('div');
-        bubbleFooter.className = 'bubble-footer';
-        
-        const closeButton = document.createElement('button');
-        closeButton.className = 'bubble-close-btn';
-        closeButton.textContent = 'Fermer';
-        
-        bubbleFooter.appendChild(closeButton);
-        
-        // Assembler
-        bubbleContent.appendChild(bubbleHeader);
-        bubbleContent.appendChild(bubbleBody);
-        bubbleContent.appendChild(bubbleFooter);
-        
-        bubbleContainer.appendChild(bubbleContent);
-        bubbleContainer.appendChild(bubbleToggle);
-        
-        document.body.appendChild(bubbleContainer);
-        
-        // Gérer les interactions
-        bubbleToggle.addEventListener('click', function(e) {
-            e.stopPropagation(); // Empêcher la propagation pour éviter de déclencher le drag
-            bubbleContent.classList.toggle('show');
-            
-            // Mettre à jour le contenu dynamique quand on ouvre la bulle
-            if (bubbleContent.classList.contains('show')) {
-                bubbleBody.innerHTML = getDynamicContent();
-            }
-        });
-        
-        // Fermer avec le X
-        bubbleClose.addEventListener('click', function(e) {
-            e.stopPropagation();
-            bubbleContent.classList.remove('show');
-        });
-        
-        // Fermer avec le bouton
-        closeButton.addEventListener('click', function(e) {
-            e.stopPropagation();
-            bubbleContent.classList.remove('show');
-        });
-        
-        // Fermer en cliquant en dehors
-        document.addEventListener('click', function(e) {
-            if (!bubbleContainer.contains(e.target) && bubbleContent.classList.contains('show')) {
-                bubbleContent.classList.remove('show');
-            }
-        });
-        
-        // Rendre la bulle déplaçable
-        makeDraggable(bubbleContainer);
-        
-        return bubbleContainer;
-    }
-    
-    // Fonction pour rendre un élément déplaçable
-    function makeDraggable(element) {
-        // Vérifier que l'élément existe
-        if (!element) return;
-        
-        let offsetX, offsetY, isDragging = false;
-        
-        element.addEventListener('mousedown', function(e) {
-            // Ne pas déclencher le drag si on clique sur le contenu ou sur la bulle ouverte
-            if (e.target.closest('.bubble-content')) {
-                return;
-            }
-            
-            isDragging = true;
-            element.classList.add('dragging');
-            
-            // Calculer le décalage entre la position du clic et la position de l'élément
-            const rect = element.getBoundingClientRect();
-            offsetX = e.clientX - rect.left;
-            offsetY = e.clientY - rect.top;
-            
-            // Éviter la sélection de texte pendant le drag
-            e.preventDefault();
-        });
-        
-        document.addEventListener('mousemove', function(e) {
-            if (!isDragging) return;
-            
-            // Calculer la nouvelle position
-            const x = e.clientX - offsetX;
-            const y = e.clientY - offsetY;
-            
-            // Limiter la position à l'intérieur de la fenêtre
-            const maxX = window.innerWidth - element.offsetWidth;
-            const maxY = window.innerHeight - element.offsetHeight;
-            
-            const newX = Math.max(0, Math.min(x, maxX));
-            const newY = Math.max(0, Math.min(y, maxY));
-            
-            // Appliquer la nouvelle position
-            element.style.left = newX + 'px';
-            element.style.top = newY + 'px';
-            element.style.right = 'auto';
-            element.style.bottom = 'auto';
-        });
-        
-        document.addEventListener('mouseup', function() {
-            if (isDragging) {
-                isDragging = false;
-                element.classList.remove('dragging');
-                
-                // Sauvegarder la position
-                localStorage.setItem('bubbleX', element.style.left);
-                localStorage.setItem('bubbleY', element.style.top);
-            }
-        });
-    }
-    
-    // Fonction pour mettre à jour le contenu de la bulle
-    function updateBubbleContent() {
-        const bubbleBody = document.querySelector('.bubble-body');
-        if (bubbleBody) {
-            bubbleBody.innerHTML = getDynamicContent();
-        }
-    }
-    
-    // Exécuter immédiatement et périodiquement
-    captureAndRemoveAllErrors();
-    const errorInterval = setInterval(captureAndRemoveAllErrors, 200);
-    
-    // Fonction pour obtenir les informations sur le type de déménagement sélectionné
-    function getTypeDemenagementInfo() {
-        const select = document.getElementById('type_demenagement_id');
-        let typeName = 'Aucun type sélectionné';
-        let typeId = '';
-        
-        if (select && select.selectedIndex >= 0) {
-            typeName = select.options[select.selectedIndex].text || 'Type inconnu';
-            typeId = select.value;
-        }
-        
-        return { typeName, typeId };
-    }
-    
-    // Créer ou récupérer la bulle déplaçable (après la définition des fonctions)
-    let bubble;
-    try {
-        bubble = document.querySelector('.bubble-container');
-        if (!bubble) {
-            bubble = createDraggableBubble();
-        }
-        
-        // S'assurer que la bulle est visible
-        if (bubble) {
-            bubble.style.display = 'block';
-            const bubbleContent = bubble.querySelector('.bubble-content');
-            if (bubbleContent) {
-                bubbleContent.innerHTML = getDynamicContent();
-            }
-        }
-    } catch (e) {
-        console.error('Erreur lors de la création de la bulle:', e);
-    }
-    
-    // Créer le panneau de commentaires
-    createCommentPanel();
-    
-    // Mettre à jour le contenu de la bulle quand le type de déménagement change
-    const selectTypeDemenagement = document.getElementById('type_demenagement_id');
-    if (selectTypeDemenagement) {
-        selectTypeDemenagement.addEventListener('change', function() {
-            updateBubbleContent();
-            // Supprimer d'éventuelles erreurs générées par le changement
-            setTimeout(captureAndRemoveAllErrors, 200);
-        });
-        
-        // Mettre à jour immédiatement
-        updateBubbleContent();
-    }
-    
-    // Ajouter un gestionnaire pour les clics sur les boutons de vérification de disponibilité
-    document.addEventListener('click', function(e) {
-        if (e.target && (e.target.id === 'voir-disponibilites' || e.target.id === 'verifier-disponibilites' || 
-            e.target.classList.contains('btn-primary'))) {
-            // Réafficher la bulle après un court délai
-            setTimeout(function() {
-                let bubble = document.querySelector('.bubble-container');
-                if (!bubble) {
-                    bubble = createDraggableBubble();
-                }
-                bubble.style.display = 'block';
-                updateBubbleContent();
-                // Supprimer les erreurs après la vérification
-                captureAndRemoveAllErrors();
-            }, 500);
-        }
-    });
-    
-    // Supprimer radicalement les messages d'erreur et s'assurer que la bulle est visible
-    document.addEventListener('click', function(e) {
-        if (e.target) {
-            // Supprimer les erreurs pour tout clic
-            captureAndRemoveAllErrors();
-            
-            // Si c'est un bouton qui pourrait déclencher une action, s'assurer que la bulle reste visible
-            if (e.target.tagName === 'BUTTON' || e.target.classList.contains('btn') || 
-                e.target.closest('button') || e.target.closest('.btn')) {
-                setTimeout(function() {
-                    let bubble = document.querySelector('.bubble-container');
-                    if (!bubble) {
-                        bubble = createDraggableBubble();
-                    } else {
-                        bubble.style.display = 'block';
-                    }
-                    updateBubbleContent();
-                }, 300);
-            }
-        }
-    });
-    
-    // Empêcher la fermeture automatique des bulles lors de vérification de disponibilité
-    try {
-        const originalXHR = window.XMLHttpRequest;
-        window.XMLHttpRequest = function() {
-            const xhr = new originalXHR();
-            xhr.addEventListener('load', function() {
-                // Après chaque requête AJAX, s'assurer que la bulle est visible
-                setTimeout(function() {
-                    try {
-                        captureAndRemoveAllErrors();
-                        
-                        // Forcer la fermeture de toutes les boîtes de dialogue d'erreur
-                        const modals = document.querySelectorAll('.modal, .modal-backdrop');
-                        modals.forEach(modal => {
-                            if (modal && modal.style) {
-                                modal.style.display = 'none';
-                                modal.style.zIndex = '-9999';
-                                if (modal.parentNode) {
-                                    try { modal.parentNode.removeChild(modal); } catch(e) {}
-                                }
-                            }
-                        });
-                        document.body.classList.remove('modal-open');
-                        document.body.style.overflow = 'auto';
-                        
-                        // Réafficher la bulle
-                        let bubble = document.querySelector('.bubble-container');
-                        if (!bubble) {
-                            bubble = createDraggableBubble();
-                        }
-                        if (bubble && bubble.style) {
-                            bubble.style.display = 'block';
-                        }
-                        if (typeof updateBubbleContent === 'function') {
-                            updateBubbleContent();
-                        }
-                    } catch(e) {
-                        console.error('Erreur dans le gestionnaire XHR:', e);
-                    }
-                }, 300);
-            });
-        };
-    } catch(e) {
-        console.error('Erreur lors de la redéfinition de XMLHttpRequest:', e);
-    }
-    
-    // Mettre à jour le compteur de commentaires au démarrage
-    try {
-        if (window.commentSystem && typeof window.commentSystem.updateCounter === 'function') {
-            window.commentSystem.updateCounter();
-        }
-    } catch(e) {
-        console.error('Erreur lors de la mise à jour du compteur:', e);
-    }
-});
-</script>
-
-
 <div class="prestation-page">
-    <div class="page-title">
+    <div class="page-title d-flex justify-content-between align-items-center">
         <h1><i class="fas fa-edit"></i> Modifier une prestation</h1>
-        <a href="{{ url_for('prestation.index') }}" class="btn btn-outline-secondary">
-            <i class="fas fa-arrow-left"></i> Retour à la liste
-        </a>
+        <div class="d-flex align-items-center gap-3">
+            <div class="prestation-type-selector">
+                <div class="form-check form-switch form-switch-lg">
+                    <input class="form-check-input" type="checkbox" id="prestation-type-switch" {% if prestation.est_groupage %}checked{% endif %}>
+                    <label class="form-check-label" for="prestation-type-switch">
+                        <span class="standard-label">Standard</span>
+                        <span class="groupage-label">Groupage</span>
+                    </label>
+                    <input type="hidden" name="type_demenagement" id="type_demenagement_hidden" value="{% if prestation.est_groupage %}Groupage{% else %}Standard{% endif %}">
+                    <input type="hidden" name="mode_groupage" value="{% if prestation.est_groupage %}true{% else %}false{% endif %}">
+                </div>
+            </div>
+            <a href="{{ url_for('prestation.index') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Retour à la liste
+            </a>
+        </div>
     </div>
-    
+
     <div class="card">
         <div class="card-body">
             <form method="POST">
                 {{ form.hidden_tag() }}
                 
-                <!-- Type de prestation (Standard/Groupage) -->
-                <div class="mb-4">
-                    <label class="form-label">Type de prestation</label>
-                    <div class="btn-group w-100" role="group">
-                        <button type="button" id="btn-standard" class="btn btn-outline-primary active">
-                            <i class="fas fa-truck"></i> Standard
-                        </button>
-                        <button type="button" id="btn-groupage" class="btn btn-outline-primary">
-                            <i class="fas fa-truck-loading"></i> Groupage
-                        </button>
-                    </div>
-                    <div id="mode-info" class="mt-2 text-info small">
-                        <i class="fas fa-info-circle"></i> Mode standard: un seul client, un point de départ et un point d'arrivée
-                    </div>
-                    <input type="hidden" name="type_demenagement" value="Standard">
+                <div id="mode-info" class="alert alert-info mb-3">
+                    <i class="fas fa-info-circle me-2"></i> {% if prestation.est_groupage %}Mode groupage: plusieurs clients, plusieurs points de départ et d'arrivée{% else %}Mode standard: un seul client, un point de départ et un point d'arrivée{% endif %}
                 </div>
 
-                <!-- Clients supplémentaires (pour le mode groupage) -->
-                <div id="clients-supplementaires" class="mb-4" style="display: none;">
-                    <div class="card">
-                        <div class="card-header bg-light">
-                            <h6 class="mb-0">Clients supplémentaires</h6>
-                        </div>
-                        <div class="card-body">
-                            <div id="clients-container">
-                                <!-- Les clients supplémentaires seront ajoutés ici dynamiquement -->
-                            </div>
-                            <button type="button" id="ajouter-client" class="btn btn-outline-secondary btn-sm mt-2" style="display: none;">
-                                <i class="fas fa-plus-circle"></i> Ajouter un client
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Section Client et Type de déménagement -->
+                <!-- Section Client -->
                 <div class="row mb-3">
                     <div class="col-md-6">
-                        <!-- Ajout d'un bouton pour basculer entre les types de prestation -->
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <label for="client_id" class="form-label">{{ form.client_id.label.text }} <span class="text-danger">*</span></label>
-                            <div class="btn-group btn-group-sm" role="group">
-                                <button type="button" class="btn btn-outline-primary active" id="btn-standard">Prestation Standard</button>
-                                <button type="button" class="btn btn-outline-primary" id="btn-groupage">Prestation Groupage</button>
+                        <div class="card">
+                            <div class="card-header bg-secondary text-white">
+                                <h5 class="mb-0"><i class="fas fa-user"></i> {{ form.client_id.label.text }} <span class="text-danger">*</span></h5>
                             </div>
-                        </div>
-                        
-                        <!-- Client principal -->
-                        <div id="client-principal">
-                            {{ form.client_id(class="form-control" + (" is-invalid" if form.client_id.errors else ""), id="client_id") }}
-                            {% for error in form.client_id.errors %}
-                                <div class="invalid-feedback">{{ error }}</div>
-                            {% endfor %}
-                        </div>
-                        
-                        <!-- Clients supplémentaires pour le groupage -->
-                        <div id="clients-supplementaires" class="mt-2" style="display: none;">
-                            <!-- Les clients supplémentaires seront ajoutés ici dynamiquement -->
-                        </div>
-                        <button type="button" id="ajouter-client" class="btn btn-outline-secondary btn-sm mt-2" style="display: none;">
-                            <i class="fas fa-plus-circle"></i> Ajouter un client
-                        </button>
-                        
-                        <div class="form-text mt-1" id="mode-info">
-                            <i class="fas fa-info-circle"></i> Mode standard: un seul client, de point A à point B
+                            <div class="card-body">
+                                <!-- Client principal -->
+                                <div id="client-principal">
+                                    {{ form.client_id(class="form-control" + (" is-invalid" if form.client_id.errors else ""), id="client_id") }}
+                                    {% for error in form.client_id.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    
-                    <div class="col-md-6">
-                        <label for="type_demenagement_id" class="form-label">Type de déménagement <span class="text-danger">*</span></label>
-                        <!-- SOLUTION BOOTSTRAP : Select avec classe Bootstrap -->
-                        <select name="type_demenagement_id" id="type_demenagement_id" class="form-select">
-                            <option value="">Sélectionnez un type</option>
-                            {% for type in types_demenagement %}
-                                <option value="{{ type.id }}">{{ type.nom }}</option>
-                            {% endfor %}
-                        </select>
-                        {% if form.type_demenagement_id.errors %}
-                            <div class="invalid-feedback d-block">
-                                {% for error in form.type_demenagement_id.errors %}
-                                    {{ error }}
-                                {% endfor %}
+
+                    <!-- Clients supplémentaires pour le groupage -->
+                    <div class="col-md-6" id="section-clients-supplementaires" style="display: none;">
+                        <div class="card">
+                            <div class="card-header bg-info text-white">
+                                <h5 class="mb-0"><i class="fas fa-users"></i> Clients supplémentaires</h5>
                             </div>
-                        {% endif %}
-                        <div class="form-text mt-1" id="vehicle-hint">Sélectionnez d'abord le type pour voir les véhicules adaptés</div>
+                            <div class="card-body">
+                                <div class="alert alert-info mb-3">
+                                    <i class="fas fa-info-circle"></i> En mode groupage, vous pouvez ajouter plusieurs clients pour une même prestation.
+                                </div>
+                                <div id="clients-supplementaires">
+                                    <!-- Les clients supplémentaires seront ajoutés ici dynamiquement -->
+                                </div>
+                                <button type="button" id="ajouter-client" class="btn btn-primary mt-3 w-100">
+                                    <i class="fas fa-plus-circle me-2"></i> Ajouter un client supplémentaire
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                
-                <!-- Champ caché pour la compatibilité avec l'ancien système -->
-                {{ form.type_demenagement_id(style="display: none;") }}
-                
-                <!-- Section Dates -->
+
+                <!-- Section Dates et Type -->
                 <div class="row mb-3">
                     <div class="col-md-6">
                         <label for="date_debut" class="form-label">{{ form.date_debut.label.text }} <span class="text-danger">*</span></label>
@@ -1548,48 +196,29 @@ document.addEventListener('DOMContentLoaded', function() {
                         {% endfor %}
                     </div>
                 </div>
-                
-                <!-- Section Transporteurs -->
+
+                <!-- Section Type de déménagement -->
                 <div class="row mb-3">
-                    <div class="col-md-12 form-group transporteurs">
-                        <!-- Boutons -->
-                        <div class="mb-3" style="width: 100%;">
-                            <button type="button" id="show-calendar-btn" class="btn btn-primary me-2">
-                                <i class="fas fa-calendar-alt"></i> Voir les disponibilités
-                            </button>
-                            <button type="button" id="verifier-disponibilite" class="btn btn-info">
-                                <i class="fas fa-sync-alt"></i> Vérifier les disponibilités
-                            </button>
-                        </div>
-                        
-                        <!-- Titre -->
-                        <h4 class="mb-2 mt-3">Transporteurs disponibles</h4>
-                        
-                        <!-- Section Liste des transporteurs -->
-                        <div class="border p-3 mb-3 rounded" style="border-color: #0d6efd !important; background-color: #f8f9fa;">
-                            <!-- Liste déroulante qui montre plusieurs transporteurs -->
-                            <div class="mb-2">
-                                <select name="transporteurs" id="transporteurs" multiple="multiple" 
-                                    class="form-select form-control" 
-                                    style="height: 250px !important; overflow-y: auto !important; display: block !important;">
-                                    {% for option in form.transporteurs.choices %}
-                                        <option value="{{ option[0] }}" class="p-2">{{ option[1] }}</option>
-                                    {% endfor %}
-                                </select>
+                    <div class="col-md-12">
+                        <label for="type_demenagement_id" class="form-label">Type de déménagement <span class="text-danger">*</span></label>
+                        <select name="type_demenagement_id" id="type_demenagement_id" class="form-select">
+                            <option value="">Sélectionnez un type</option>
+                            {% for type in types_demenagement %}
+                                <option value="{{ type.id }}" {% if prestation.type_demenagement_id == type.id %}selected{% endif %}>
+                                    {{ type.nom }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                        {% if form.type_demenagement_id.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.type_demenagement_id.errors %}
+                                    {{ error }}
+                                {% endfor %}
                             </div>
-                            
-                            <!-- Message d'information -->
-                            <div class="d-flex justify-content-between align-items-center small">
-                                <div>
-                                    <i class="fas fa-info-circle text-primary"></i>
-                                    Maintenez la touche Ctrl pour sélectionner plusieurs transporteurs
-                                </div>
-                                <div class="selected-transporteurs-count text-primary fw-bold"></div>
-                            </div>
-                        </div>
+                        {% endif %}
                     </div>
                 </div>
-                
+
                 <!-- Section Adresses -->
                 <div class="row mb-3">
                     <div class="col-md-6">
@@ -1624,27 +253,10 @@ document.addEventListener('DOMContentLoaded', function() {
                         </button>
                     </div>
                 </div>
-                
+
+
+
                 <!-- Informations supplémentaires -->
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <label for="tags" class="form-label">{{ form.tags.label.text }}</label>
-                        {{ form.tags(class="form-control" + (" is-invalid" if form.tags.errors else ""), id="tags") }}
-                        {% for error in form.tags.errors %}
-                            <div class="invalid-feedback">{{ error }}</div>
-                        {% endfor %}
-                        <div class="form-text">Ex: urgent, fragile, volumineux</div>
-                    </div>
-                    
-                    <div class="col-md-6">
-                        <label for="societe" class="form-label">{{ form.societe.label.text }}</label>
-                        {{ form.societe(class="form-control" + (" is-invalid" if form.societe.errors else ""), id="societe") }}
-                        {% for error in form.societe.errors %}
-                            <div class="invalid-feedback">{{ error }}</div>
-                        {% endfor %}
-                    </div>
-                </div>
-                
                 <div class="row mb-3">
                     <div class="col-md-6">
                         <label for="montant" class="form-label">{{ form.montant.label.text }}</label>
@@ -1662,7 +274,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         {% endfor %}
                     </div>
                 </div>
-                
+
                 <div class="row mb-3">
                     <div class="col-md-6">
                         <label for="statut" class="form-label">{{ form.statut.label.text }}</label>
@@ -1671,8 +283,17 @@ document.addEventListener('DOMContentLoaded', function() {
                             <div class="invalid-feedback">{{ error }}</div>
                         {% endfor %}
                     </div>
+                    
+                    <div class="col-md-6">
+                        <label for="societe" class="form-label">{{ form.societe.label.text }}</label>
+                        {{ form.societe(class="form-control" + (" is-invalid" if form.societe.errors else ""), id="societe") }}
+                        {% for error in form.societe.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                        {% endfor %}
+                    </div>
                 </div>
-                
+
+                <!-- Section Observations -->
                 <div class="mb-4">
                     <label for="observations" class="form-label">{{ form.observations.label.text }}</label>
                     {{ form.observations(class="form-control summernote-editor" + (" is-invalid" if form.observations.errors else ""), id="observations", rows=4, placeholder="Observation principale") }}
@@ -1688,44 +309,29 @@ document.addEventListener('DOMContentLoaded', function() {
                         <i class="fas fa-plus-circle"></i> Ajouter une observation
                     </button>
                 </div>
-                
-                <!-- Inclure le nouveau widget de transport -->
-                {% include 'prestations/widget_transport.html' %}
-                
-                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                    <a href="{{ url_for('prestation.index') }}" class="btn btn-secondary">Annuler</a>
-                    {{ form.submit(class="btn btn-primary") }}
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
 
-<!-- La bulle flottante est maintenant créée dynamiquement via JavaScript -->
-
-<!-- Modal pour le calendrier -->
-<div class="modal fade" id="calendar-modal" tabindex="-1" role="dialog" aria-labelledby="calendar-modal-title" aria-hidden="true">
-    <div class="modal-dialog modal-xl" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="calendar-modal-title">Calendrier des disponibilités</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Fermer">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
+                <!-- Section Tags -->
                 <div class="row mb-3">
-                    <div class="col-md-4">
-                        <select id="transporteur-filter" class="form-control">
-                            <option value="">Tous les transporteurs</option>
-                        </select>
+                    <div class="col-md-12">
+                        <label for="tags" class="form-label">{{ form.tags.label.text }}</label>
+                        {{ form.tags(class="form-control" + (" is-invalid" if form.tags.errors else ""), id="tags") }}
+                        {% for error in form.tags.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                        {% endfor %}
+                        <div class="form-text">Ex: urgent, fragile, volumineux</div>
                     </div>
                 </div>
-                <div id="transporteur-calendrier" style="height: 600px;"></div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Fermer</button>
-            </div>
+
+                <!-- Boutons d'action -->
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                    <a href="{{ url_for('prestation.index') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Retour à la liste
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Enregistrer
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -1739,239 +345,11 @@ document.addEventListener('DOMContentLoaded', function() {
 <script src="{{ url_for('static', filename='js/vehicule-suggestions-fixed.js') }}"></script>
 <script src="{{ url_for('static', filename='js/bubble-fix.js') }}"></script>
 <script src="{{ url_for('static', filename='js/summernote-initializer.js') }}"></script>
-<!-- Nouveau widget de transport -->
-<link rel="stylesheet" href="{{ url_for('static', filename='css/widget-transport.css') }}">
-<script src="{{ url_for('static', filename='js/widget-transport.js') }}"></script>
 <script src="{{ url_for('static', filename='js/etapes-supplementaires.js') }}"></script>
 <script src="{{ url_for('static', filename='js/prestation-documents.js') }}"></script>
 <script src="{{ url_for('static', filename='js/boutons-reparation.js') }}"></script>
+<script src="{{ url_for('static', filename='js/groupage-fix-v2.js') }}"></script>
+<script src="{{ url_for('static', filename='js/transporteurs-widget-final.js') }}"></script>
+<script src="{{ url_for('static', filename='js/prestation-type-switcher.js') }}"></script>
+<script src="{{ url_for('static', filename='js/adapter-type-prestation.js') }}"></script>
 {% endblock %}
-
-<script>
-// Code pour gérer les étapes supplémentaires d'adresses
-document.addEventListener('DOMContentLoaded', function() {
-    // Gestion des modes de prestation (standard vs groupage)
-    const btnStandard = document.getElementById('btn-standard');
-    const btnGroupage = document.getElementById('btn-groupage');
-    const ajouterClientBtn = document.getElementById('ajouter-client');
-    const clientsSupplementairesContainer = document.getElementById('clients-supplementaires');
-    let compteurClients = 0;
-    let estGroupage = false;
-    
-    // Définir l'objet modeInfo pour la compatibilité avec d'autres scripts
-    window.modeInfo = {
-        mode: 'edit',
-        id: {{ prestation.id|tojson }}
-    };
-    
-    btnStandard.addEventListener('click', function() {
-        btnStandard.classList.add('active');
-        btnGroupage.classList.remove('active');
-        ajouterClientBtn.style.display = 'none';
-        clientsSupplementairesContainer.style.display = 'none';
-        estGroupage = false;
-    });
-    
-    btnGroupage.addEventListener('click', function() {
-        btnStandard.classList.remove('active');
-        btnGroupage.classList.add('active');
-        ajouterClientBtn.style.display = 'block';
-        clientsSupplementairesContainer.style.display = 'block';
-        estGroupage = true;
-    });
-    
-    // Gestion de l'ajout de clients supplémentaires
-    ajouterClientBtn.addEventListener('click', function() {
-        compteurClients++;
-        const clientDiv = document.createElement('div');
-        clientDiv.className = 'input-group mt-2 client-supplementaire';
-        
-        // Récupérer les options du select client original
-        const optionsClients = Array.from(document.getElementById('client_id').options);
-        let optionsHTML = '';
-        optionsClients.forEach(option => {
-            optionsHTML += `<option value="${option.value}">${option.text}</option>`;
-        });
-        
-        clientDiv.innerHTML = `
-            <select class="form-control" name="client_supplementaire_${compteurClients}">
-                ${optionsHTML}
-            </select>
-            <button type="button" class="btn btn-outline-danger supprimer-client" title="Supprimer ce client">
-                <i class="fas fa-trash-alt"></i>
-            </button>
-        `;
-        clientsSupplementairesContainer.appendChild(clientDiv);
-        
-        // Ajouter l'événement pour supprimer ce client
-        const supprimerBtn = clientDiv.querySelector('.supprimer-client');
-        supprimerBtn.addEventListener('click', function() {
-            clientDiv.remove();
-        });
-    });
-    
-    // Gestion des étapes de départ
-    const etapesDepartContainer = document.getElementById('etapes-depart-container');
-    const ajouterEtapeDepartBtn = document.getElementById('ajouter-etape-depart');
-    let compteurEtapesDepart = 0;
-    
-    ajouterEtapeDepartBtn.addEventListener('click', function() {
-        compteurEtapesDepart++;
-        const etapeDiv = document.createElement('div');
-        etapeDiv.className = 'input-group mt-2 etape-depart';
-        etapeDiv.innerHTML = `
-            <textarea class="form-control" name="etape_depart_${compteurEtapesDepart}" 
-                      placeholder="Étape intermédiaire ${compteurEtapesDepart}" rows="2"></textarea>
-            <button type="button" class="btn btn-outline-danger supprimer-etape" title="Supprimer cette étape">
-                <i class="fas fa-trash-alt"></i>
-            </button>
-        `;
-        etapesDepartContainer.appendChild(etapeDiv);
-        
-        // Ajouter l'événement pour supprimer cette étape
-        const supprimerBtn = etapeDiv.querySelector('.supprimer-etape');
-        supprimerBtn.addEventListener('click', function() {
-            etapeDiv.remove();
-        });
-    });
-    
-    // Gestion des étapes d'arrivée
-    const etapesArriveeContainer = document.getElementById('etapes-arrivee-container');
-    const ajouterEtapeArriveeBtn = document.getElementById('ajouter-etape-arrivee');
-    let compteurEtapesArrivee = 0;
-    
-    ajouterEtapeArriveeBtn.addEventListener('click', function() {
-        compteurEtapesArrivee++;
-        const etapeDiv = document.createElement('div');
-        etapeDiv.className = 'input-group mt-2 etape-arrivee';
-        etapeDiv.innerHTML = `
-            <textarea class="form-control" name="etape_arrivee_${compteurEtapesArrivee}" 
-                      placeholder="Étape intermédiaire ${compteurEtapesArrivee}" rows="2"></textarea>
-            <button type="button" class="btn btn-outline-danger supprimer-etape" title="Supprimer cette étape">
-                <i class="fas fa-trash-alt"></i>
-            </button>
-        `;
-        etapesArriveeContainer.appendChild(etapeDiv);
-        
-        // Ajouter l'événement pour supprimer cette étape
-        const supprimerBtn = etapeDiv.querySelector('.supprimer-etape');
-        supprimerBtn.addEventListener('click', function() {
-            etapeDiv.remove();
-        });
-    });
-    
-    // Soumission du formulaire - Préparation des données des étapes
-    const formPrestation = document.querySelector('form');
-    formPrestation.addEventListener('submit', function(e) {
-        // Collecter toutes les étapes de départ
-        const etapesDepart = [];
-        document.querySelectorAll('.etape-depart textarea').forEach(function(textarea) {
-            if (textarea.value.trim() !== '') {
-                etapesDepart.push(textarea.value.trim());
-            }
-        });
-        
-        // Collecter toutes les étapes d'arrivée
-        const etapesArrivee = [];
-        document.querySelectorAll('.etape-arrivee textarea').forEach(function(textarea) {
-            if (textarea.value.trim() !== '') {
-                etapesArrivee.push(textarea.value.trim());
-            }
-        });
-        
-        // Créer des champs cachés pour les envoyer avec le formulaire
-        if (etapesDepart.length > 0) {
-            const etapesDepartInput = document.createElement('input');
-            etapesDepartInput.type = 'hidden';
-            etapesDepartInput.name = 'etapes_depart';
-            etapesDepartInput.value = JSON.stringify(etapesDepart);
-            formPrestation.appendChild(etapesDepartInput);
-        }
-        
-        if (etapesArrivee.length > 0) {
-            const etapesArriveeInput = document.createElement('input');
-            etapesArriveeInput.type = 'hidden';
-            etapesArriveeInput.name = 'etapes_arrivee';
-            etapesArriveeInput.value = JSON.stringify(etapesArrivee);
-            formPrestation.appendChild(etapesArriveeInput);
-        }
-        
-        // Collecter tous les clients supplémentaires pour le groupage
-        if (estGroupage) {
-            const clientsSupplementaires = [];
-            document.querySelectorAll('.client-supplementaire select').forEach(function(select) {
-                if (select.value) {
-                    clientsSupplementaires.push(select.value);
-                }
-            });
-            
-            // Créer un champ caché pour les envoyer avec le formulaire
-            if (clientsSupplementaires.length > 0) {
-                const clientsSupplementairesInput = document.createElement('input');
-                clientsSupplementairesInput.type = 'hidden';
-                clientsSupplementairesInput.name = 'clients_supplementaires';
-                clientsSupplementairesInput.value = JSON.stringify(clientsSupplementaires);
-                formPrestation.appendChild(clientsSupplementairesInput);
-                
-                // Marquer comme groupage
-                const typePrestation = document.createElement('input');
-                typePrestation.type = 'hidden';
-                typePrestation.name = 'type_prestation';
-                typePrestation.value = 'groupage';
-                formPrestation.appendChild(typePrestation);
-            }
-        } else {
-            // Marquer comme standard
-            const typePrestation = document.createElement('input');
-            typePrestation.type = 'hidden';
-            typePrestation.name = 'type_prestation';
-            typePrestation.value = 'standard';
-            formPrestation.appendChild(typePrestation);
-        }
-    });
-    
-    // Gestion des observations supplémentaires
-    const observationsSupplementairesContainer = document.getElementById('observations-supplementaires');
-    const ajouterObservationBtn = document.getElementById('ajouter-observation');
-    let compteurObservations = 0;
-    
-    ajouterObservationBtn.addEventListener('click', function() {
-        compteurObservations++;
-        const observationDiv = document.createElement('div');
-        observationDiv.className = 'input-group mt-2 observation-supplementaire';
-        observationDiv.innerHTML = 
-            '<textarea class="form-control" name="observation_' + compteurObservations + 
-            '" placeholder="Observation supplémentaire ' + compteurObservations + '" rows="2"></textarea>' +
-            '<button type="button" class="btn btn-outline-danger supprimer-observation" title="Supprimer cette observation">' +
-            '<i class="fas fa-trash-alt"></i>' +
-            '</button>';
-        observationsSupplementairesContainer.appendChild(observationDiv);
-        
-        // Ajouter l'événement pour supprimer cette observation
-        const supprimerBtn = observationDiv.querySelector('.supprimer-observation');
-        supprimerBtn.addEventListener('click', function() {
-            observationDiv.remove();
-        });
-    });
-    
-    // Soumission du formulaire - Préparation des données des observations supplémentaires
-    formPrestation.addEventListener('submit', function(e) {
-        // Collecter toutes les observations supplémentaires
-        const observationsSupplementaires = [];
-        document.querySelectorAll('.observation-supplementaire textarea').forEach(function(textarea) {
-            if (textarea.value.trim() !== '') {
-                observationsSupplementaires.push(textarea.value.trim());
-            }
-        });
-        
-        // Créer des champs cachés pour les envoyer avec le formulaire
-        if (observationsSupplementaires.length > 0) {
-            const observationsSupplementairesInput = document.createElement('input');
-            observationsSupplementairesInput.type = 'hidden';
-            observationsSupplementairesInput.name = 'observations_supplementaires';
-            observationsSupplementairesInput.value = JSON.stringify(observationsSupplementaires);
-            formPrestation.appendChild(observationsSupplementairesInput);
-        }
-    });
-});
-</script>
